@@ -39,3 +39,12 @@ plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.
 pidfile ENV["PIDFILE"] if ENV["PIDFILE"]
+
+# Railway deployment configuration
+if ENV['RAILS_ENV'] == 'production'
+  # Bind to all interfaces for Railway
+  bind "tcp://0.0.0.0:#{ENV.fetch('PORT', 3000)}"
+
+  # Enable logging for Railway
+  stdout_redirect '/dev/stdout', '/dev/stderr', true
+end

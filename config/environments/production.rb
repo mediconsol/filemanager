@@ -35,6 +35,10 @@ Rails.application.configure do
   # Skip secret key base requirement during assets precompile
   config.require_master_key = false
 
+  # Railway deployment settings
+  config.force_ssl = false  # Railway handles SSL termination
+  config.log_to_stdout = true if ENV["RAILS_LOG_TO_STDOUT"].present?
+
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
 

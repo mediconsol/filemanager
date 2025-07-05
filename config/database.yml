@@ -81,11 +81,3 @@ test:
 production:
   <<: *default
   url: <%= ENV["DATABASE_URL"] %>
-  queue:
-    <<: *primary_production
-    database: my_rails_app_production_queue
-    migrations_paths: db/queue_migrate
-  cable:
-    <<: *primary_production
-    database: my_rails_app_production_cable
-    migrations_paths: db/cable_migrate
