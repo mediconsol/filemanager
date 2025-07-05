@@ -1,0 +1,272 @@
+<% content_for :title, "리포트 스케줄러 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">리포트 스케줄러</h1>
+    <p class="text-muted mb-0">정기 리포트 생성 및 자동 발송을 관리하세요</p>
+  </div>
+  <div>
+    <% if can? :create, ReportSchedule %>
+      <%= link_to "새 리포트 스케줄", new_report_scheduler_path, class: "btn btn-primary" %>
+    <% end %>
+  </div>
+</div>
+
+<!-- Report Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @report_stats[:total] %></h5>
+        <p class="card-text small text-muted">전체 스케줄</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @report_stats[:active] %></h5>
+        <p class="card-text small text-muted">활성 스케줄</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-secondary"><%= @report_stats[:inactive] %></h5>
+        <p class="card-text small text-muted">비활성 스케줄</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @report_stats[:due_for_execution] %></h5>
+        <p class="card-text small text-muted">실행 대기</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: report_scheduler_index_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-3">
+        <%= form.select :status,
+            options_for_select([['전체 상태', ''], ['활성', 'active'], ['비활성', 'inactive']], params[:status]),
+            {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.select :frequency,
+            options_for_select([['전체 주기', ''], ['매일', 'daily'], ['매주', 'weekly'], ['매월', 'monthly'], ['분기별', 'quarterly'], ['매년', 'yearly']], params[:frequency]),
+            {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.submit "필터 적용", class: "btn btn-outline-primary" %>
+        <%= link_to "초기화", report_scheduler_index_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Report Schedules List -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">리포트 스케줄 목록</h5>
+  </div>
+  <div class="card-body">
+    <% if @report_schedules.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>리포트명</th>
+              <th>주기</th>
+              <th>형식</th>
+              <th>상태</th>
+              <th>다음 실행</th>
+              <th>마지막 실행</th>
+              <th>성공률</th>
+              <th>생성자</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @report_schedules.each do |schedule| %>
+              <tr>
+                <td>
+                  <%= link_to schedule.name, schedule, class: "text-decoration-none fw-bold" %>
+                  <% if schedule.description.present? %>
+                    <br><small class="text-muted"><%= schedule.description %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge bg-info"><%= schedule.frequency_humanized %></span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary"><%= schedule.format_humanized %></span>
+                </td>
+                <td>
+                  <% if schedule.status == 'active' %>
+                    <span class="badge bg-success">
+                      <i class="fas fa-play me-1"></i>활성
+                    </span>
+                  <% else %>
+                    <span class="badge bg-secondary">
+                      <i class="fas fa-pause me-1"></i>비활성
+                    </span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if schedule.next_run_at.present? %>
+                    <%= schedule.next_run_at.strftime('%m/%d %H:%M') %>
+                    <% if schedule.due_for_execution? %>
+                      <br><small class="text-warning">
+                        <i class="fas fa-clock me-1"></i>실행 대기
+                      </small>
+                    <% end %>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% last_execution = schedule.last_execution %>
+                  <% if last_execution.present? %>
+                    <%= time_ago_in_words(last_execution.created_at) %> 전
+                    <br>
+                    <% case last_execution.status %>
+                    <% when 'completed' %>
+                      <small class="text-success">
+                        <i class="fas fa-check me-1"></i>성공
+                      </small>
+                    <% when 'failed' %>
+                      <small class="text-danger">
+                        <i class="fas fa-times me-1"></i>실패
+                      </small>
+                    <% when 'running' %>
+                      <small class="text-warning">
+                        <i class="fas fa-spinner fa-spin me-1"></i>실행중
+                      </small>
+                    <% else %>
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>대기
+                      </small>
+                    <% end %>
+                  <% else %>
+                    <span class="text-muted">없음</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if schedule.execution_count > 0 %>
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar bg-success" role="progressbar"
+                           style="width: <%= schedule.success_rate %>%">
+                        <%= schedule.success_rate %>%
+                      </div>
+                    </div>
+                    <small class="text-muted">
+                      <%= schedule.execution_count %>회 실행
+                    </small>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+                <td><%= schedule.user.name %></td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <%= link_to "보기", schedule, class: "btn btn-outline-primary btn-sm" %>
+
+                    <% if can? :update, schedule %>
+                      <% if schedule.status == 'active' %>
+                        <%= link_to "비활성화", deactivate_report_scheduler_path(schedule),
+                            method: :patch, class: "btn btn-outline-warning btn-sm",
+                            confirm: "이 스케줄을 비활성화하시겠습니까?" %>
+                      <% else %>
+                        <%= link_to "활성화", activate_report_scheduler_path(schedule),
+                            method: :patch, class: "btn btn-outline-success btn-sm" %>
+                      <% end %>
+
+                      <button type="button" class="btn btn-outline-info btn-sm execute-now-btn"
+                              data-schedule-id="<%= schedule.id %>">
+                        <i class="fas fa-play me-1"></i>즉시 실행
+                      </button>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <%= paginate @report_schedules if respond_to?(:paginate) %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">리포트 스케줄이 없습니다</h5>
+        <p class="text-muted">새로운 리포트 스케줄을 생성하여 정기 리포트를 자동화하세요.</p>
+        <% if can? :create, ReportSchedule %>
+          <%= link_to "첫 번째 스케줄 생성", new_report_scheduler_path, class: "btn btn-primary" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 즉시 실행 버튼 이벤트
+  document.querySelectorAll('.execute-now-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const scheduleId = this.dataset.scheduleId;
+
+      if (confirm('이 리포트를 즉시 실행하시겠습니까?')) {
+        executeReport(scheduleId, this);
+      }
+    });
+  });
+
+  function executeReport(scheduleId, button) {
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>실행 중...';
+
+    fetch(`/reports/${scheduleId}/execute_now`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(data.message);
+        // 페이지 새로고침하여 상태 업데이트
+        setTimeout(() => location.reload(), 2000);
+      } else {
+        alert('오류: ' + data.message);
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    })
+    .catch(error => {
+      console.error('Execute report error:', error);
+      alert('리포트 실행 중 오류가 발생했습니다.');
+      button.disabled = false;
+      button.innerHTML = originalText;
+    });
+  }
+
+  // 자동 새로고침 (30초마다 실행 상태 확인)
+  setInterval(function() {
+    const runningIndicators = document.querySelectorAll('.fa-spinner.fa-spin');
+    if (runningIndicators.length > 0) {
+      // 실행 중인 리포트가 있으면 페이지 새로고침
+      location.reload();
+    }
+  }, 30000);
+});
+</script>

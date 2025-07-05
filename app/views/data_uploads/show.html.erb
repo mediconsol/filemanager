@@ -1,0 +1,253 @@
+<% content_for :title, "#{@data_upload.file_name} - 데이터 업로드" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "데이터 업로드", data_uploads_path %></li>
+        <li class="breadcrumb-item active" aria-current="page"><%= @data_upload.file_name %></li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1"><%= @data_upload.file_name %></h1>
+    <p class="text-muted mb-0">업로드 상세 정보 및 데이터 미리보기</p>
+  </div>
+  <div>
+    <% if can?(:update, @data_upload) %>
+      <%= link_to "수정", edit_data_upload_path(@data_upload), class: "btn btn-outline-primary" %>
+    <% end %>
+    <% if @data_upload.pending? && can?(:update, @data_upload) %>
+      <button type="button" id="processBtn" class="btn btn-success" onclick="startProcessing()">
+        <i class="fas fa-play me-2"></i>처리 시작
+      </button>
+    <% end %>
+  </div>
+</div>
+
+<!-- Upload Information -->
+<div class="row mb-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">파일 정보</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <dl class="row">
+              <dt class="col-sm-4">파일명:</dt>
+              <dd class="col-sm-8"><%= @data_upload.file_name %></dd>
+
+              <dt class="col-sm-4">크기:</dt>
+              <dd class="col-sm-8"><%= @data_upload.file_size_mb %> MB</dd>
+
+              <dt class="col-sm-4">형식:</dt>
+              <dd class="col-sm-8"><%= @data_upload.file_type %></dd>
+
+              <dt class="col-sm-4">카테고리:</dt>
+              <dd class="col-sm-8">
+                <% if @data_upload.data_category.present? %>
+                  <span class="badge bg-info"><%= @data_upload.data_category.humanize %></span>
+                <% else %>
+                  <span class="text-muted">미분류</span>
+                <% end %>
+              </dd>
+            </dl>
+          </div>
+          <div class="col-md-6">
+            <dl class="row">
+              <dt class="col-sm-4">상태:</dt>
+              <dd class="col-sm-8">
+                <% case @data_upload.status %>
+                <% when 'completed' %>
+                  <span class="badge bg-success">완료</span>
+                <% when 'processing' %>
+                  <span class="badge bg-warning">처리중</span>
+                <% when 'failed' %>
+                  <span class="badge bg-danger">실패</span>
+                <% else %>
+                  <span class="badge bg-secondary">대기</span>
+                <% end %>
+              </dd>
+
+              <dt class="col-sm-4">업로더:</dt>
+              <dd class="col-sm-8"><%= @data_upload.user.name %></dd>
+
+              <dt class="col-sm-4">업로드 시간:</dt>
+              <dd class="col-sm-8"><%= @data_upload.created_at.strftime('%Y-%m-%d %H:%M:%S') %></dd>
+
+              <dt class="col-sm-4">총 행 수:</dt>
+              <dd class="col-sm-8">
+                <%= @data_upload.total_rows.present? ? number_with_delimiter(@data_upload.total_rows) : '미확인' %>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">처리 현황</h5>
+      </div>
+      <div class="card-body">
+        <% if @data_upload.total_rows.present? && @data_upload.total_rows > 0 %>
+          <div class="text-center mb-3">
+            <div class="progress mb-2" style="height: 25px;">
+              <div class="progress-bar bg-success" role="progressbar"
+                   style="width: <%= @data_upload.success_rate %>%">
+                <%= @data_upload.success_rate %>%
+              </div>
+            </div>
+            <small class="text-muted">처리 완료율</small>
+          </div>
+
+          <dl class="row small">
+            <dt class="col-6">처리된 행:</dt>
+            <dd class="col-6"><%= number_with_delimiter(@data_upload.processed_rows || 0) %></dd>
+
+            <dt class="col-6">오류 행:</dt>
+            <dd class="col-6 text-danger"><%= number_with_delimiter(@data_upload.error_rows || 0) %></dd>
+
+            <% if @data_upload.processing_duration.present? %>
+              <dt class="col-6">처리 시간:</dt>
+              <dd class="col-6"><%= @data_upload.processing_duration_formatted %></dd>
+            <% end %>
+          </dl>
+        <% else %>
+          <div class="text-center text-muted">
+            <i class="fas fa-clock fa-2x mb-2"></i>
+            <p>처리 대기 중</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Preview -->
+<% if @data_upload.original_data.present? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title mb-0">데이터 미리보기</h5>
+    </div>
+    <div class="card-body">
+      <% preview_data = @data_upload.original_data %>
+      <% if preview_data['headers'].present? %>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light">
+              <tr>
+                <% preview_data['headers'].each do |header| %>
+                  <th><%= header %></th>
+                <% end %>
+              </tr>
+            </thead>
+            <tbody>
+              <% if preview_data['preview_rows'].present? %>
+                <% preview_data['preview_rows'].each do |row| %>
+                  <tr>
+                    <% preview_data['headers'].each do |header| %>
+                      <td><%= row[header] %></td>
+                    <% end %>
+                  </tr>
+                <% end %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <small class="text-muted">
+          * 처음 5행만 표시됩니다. 전체 데이터는 <%= number_with_delimiter(preview_data['row_count']) %>행입니다.
+        </small>
+      <% else %>
+        <div class="text-center text-muted py-3">
+          <p>미리보기 데이터가 없습니다.</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<!-- Error Messages -->
+<% if @data_upload.validation_errors.present? && @data_upload.validation_errors.any? %>
+  <div class="card mb-4">
+    <div class="card-header bg-warning">
+      <h5 class="card-title mb-0 text-dark">
+        <i class="fas fa-exclamation-triangle me-2"></i>검증 오류
+      </h5>
+    </div>
+    <div class="card-body">
+      <ul class="list-unstyled mb-0">
+        <% @data_upload.validation_errors.each do |error| %>
+          <li class="mb-1">
+            <i class="fas fa-times-circle text-danger me-2"></i>
+            <%= error %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+<% end %>
+
+<!-- Error Message -->
+<% if @data_upload.error_message.present? %>
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-exclamation-circle me-2"></i>처리 오류
+      </h5>
+    </div>
+    <div class="card-body">
+      <p class="mb-0"><%= @data_upload.error_message %></p>
+    </div>
+  </div>
+<% end %>
+
+<script>
+function startProcessing() {
+  console.log('startProcessing called');
+
+  if (confirm('데이터 처리를 시작하시겠습니까?')) {
+    const processBtn = document.getElementById('processBtn');
+    processBtn.disabled = true;
+    processBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>처리 중...';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    const url = '<%= process_data_data_upload_path(@data_upload) %>';
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken ? csrfToken.getAttribute('content') : '',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => {
+      console.log('Response:', response);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Data:', data);
+      if (data.success) {
+        alert('처리가 시작되었습니다!');
+        location.reload();
+      } else {
+        alert(data.message || '처리 시작 중 오류가 발생했습니다.');
+        processBtn.disabled = false;
+        processBtn.innerHTML = '<i class="fas fa-play me-2"></i>처리 시작';
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('처리 시작 중 오류가 발생했습니다: ' + error.message);
+      processBtn.disabled = false;
+      processBtn.innerHTML = '<i class="fas fa-play me-2"></i>처리 시작';
+    });
+  }
+}
+</script>

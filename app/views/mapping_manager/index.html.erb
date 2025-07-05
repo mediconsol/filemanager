@@ -1,0 +1,176 @@
+<% content_for :title, "매핑 관리 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">매핑 관리</h1>
+    <p class="text-muted mb-0">업로드된 데이터의 필드를 표준 스키마에 매핑하세요</p>
+  </div>
+</div>
+
+<!-- Mapping Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @mapping_stats[:total_uploads] %></h5>
+        <p class="card-text small text-muted">총 업로드</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @mapping_stats[:mapped_uploads] %></h5>
+        <p class="card-text small text-muted">매핑 완료</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @mapping_stats[:pending_mappings] %></h5>
+        <p class="card-text small text-muted">매핑 대기</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-info"><%= @mapping_stats[:total_mappings] %></h5>
+        <p class="card-text small text-muted">총 매핑</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload List for Mapping -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">매핑 가능한 업로드</h5>
+  </div>
+  <div class="card-body">
+    <% if @data_uploads.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>파일명</th>
+              <th>카테고리</th>
+              <th>업로드 시간</th>
+              <th>매핑 상태</th>
+              <th>필드 수</th>
+              <th>업로더</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @data_uploads.each do |upload| %>
+              <tr>
+                <td>
+                  <%= link_to upload.file_name, mapping_manager_path(upload), class: "text-decoration-none" %>
+                </td>
+                <td>
+                  <% if upload.data_category.present? %>
+                    <span class="badge bg-info"><%= upload.data_category.humanize %></span>
+                  <% else %>
+                    <span class="text-muted">미분류</span>
+                  <% end %>
+                </td>
+                <td><%= time_ago_in_words(upload.created_at) %> 전</td>
+                <td>
+                  <% if upload.field_mappings.active.any? %>
+                    <span class="badge bg-success">
+                      <i class="fas fa-check me-1"></i>매핑 완료
+                    </span>
+                    <small class="text-muted d-block">
+                      <%= upload.field_mappings.active.count %>개 필드 매핑됨
+                    </small>
+                  <% else %>
+                    <span class="badge bg-warning">
+                      <i class="fas fa-clock me-1"></i>매핑 대기
+                    </span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if upload.original_data.present? && upload.original_data['headers'].present? %>
+                    <%= upload.original_data['headers'].count %>개
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+                <td><%= upload.user.name %></td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <%= link_to "보기", mapping_manager_path(upload), class: "btn btn-outline-primary btn-sm" %>
+                    <% if can? :update, FieldMapping %>
+                      <% if upload.field_mappings.active.any? %>
+                        <%= link_to "수정", edit_mapping_manager_path(upload), class: "btn btn-outline-secondary btn-sm" %>
+                      <% else %>
+                        <%= link_to "매핑", edit_mapping_manager_path(upload), class: "btn btn-success btn-sm" %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <%= paginate @data_uploads if respond_to?(:paginate) %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">매핑 가능한 업로드가 없습니다</h5>
+        <p class="text-muted">먼저 데이터를 업로드하고 처리를 완료하세요.</p>
+        <%= link_to "데이터 업로드", data_uploads_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Help Section -->
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-question-circle me-2"></i>매핑 가이드
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <h6>매핑이란?</h6>
+        <p class="small text-muted">
+          업로드된 원본 데이터의 컬럼을 시스템의 표준 필드에 연결하는 과정입니다.
+          이를 통해 다양한 형태의 데이터를 일관된 형식으로 분석할 수 있습니다.
+        </p>
+
+        <h6>매핑 절차</h6>
+        <ol class="small text-muted">
+          <li>업로드된 파일의 "매핑" 버튼 클릭</li>
+          <li>원본 필드를 표준 필드에 드래그앤드롭</li>
+          <li>필요시 변환 규칙 설정</li>
+          <li>매핑 저장 및 미리보기 확인</li>
+        </ol>
+      </div>
+      <div class="col-md-6">
+        <h6>카테고리별 표준 필드</h6>
+        <ul class="small text-muted">
+          <li><strong>재무:</strong> 수익, 비용, 부서, 날짜, 계정코드 등</li>
+          <li><strong>운영:</strong> 병상수, 사용병상, 직원수, 환자수 등</li>
+          <li><strong>품질:</strong> 환자ID, 만족도점수, 재입원여부 등</li>
+          <li><strong>환자:</strong> 환자ID, 나이, 성별, 입원일, 진단명 등</li>
+        </ul>
+
+        <h6>매핑 유형</h6>
+        <ul class="small text-muted">
+          <li><strong>직접:</strong> 값을 그대로 복사</li>
+          <li><strong>계산:</strong> 수식을 적용하여 변환</li>
+          <li><strong>룩업:</strong> 참조 테이블을 이용한 변환</li>
+          <li><strong>조건부:</strong> 조건에 따른 값 변환</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

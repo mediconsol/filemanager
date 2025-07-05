@@ -1,0 +1,282 @@
+<% content_for :title, "관리자 센터 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">관리자 센터</h1>
+    <p class="text-muted mb-0">시스템 전체 관리 및 모니터링</p>
+  </div>
+  <div>
+    <%= link_to "시스템 모니터링", admin_system_monitoring_path, class: "btn btn-outline-primary" %>
+  </div>
+</div>
+
+<!-- System Statistics -->
+<div class="row mb-4">
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title text-primary mb-0"><%= @system_stats[:total_hospitals] %></h5>
+          <i class="fas fa-hospital fa-2x text-primary"></i>
+        </div>
+        <p class="card-text">전체 병원</p>
+        <small class="text-success">활성: <%= @system_stats[:active_hospitals] %>개</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title text-success mb-0"><%= @system_stats[:total_users] %></h5>
+          <i class="fas fa-users fa-2x text-success"></i>
+        </div>
+        <p class="card-text">전체 사용자</p>
+        <small class="text-success">활성: <%= @system_stats[:active_users] %>명</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title text-info mb-0"><%= @system_stats[:total_uploads] %></h5>
+          <i class="fas fa-upload fa-2x text-info"></i>
+        </div>
+        <p class="card-text">데이터 업로드</p>
+        <small class="text-success">완료: <%= @system_stats[:completed_uploads] %>건</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title text-warning mb-0"><%= @system_stats[:total_analyses] %></h5>
+          <i class="fas fa-chart-line fa-2x text-warning"></i>
+        </div>
+        <p class="card-text">분석 결과</p>
+        <small class="text-info">리포트: <%= @system_stats[:active_reports] %>개</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- System Health -->
+<div class="row mb-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-heartbeat me-2"></i>시스템 상태
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <% @system_health.each do |component, health| %>
+            <div class="col-md-6 mb-3">
+              <div class="d-flex align-items-center">
+                <% case health[:status] %>
+                <% when 'healthy' %>
+                  <i class="fas fa-check-circle text-success me-2"></i>
+                <% when 'warning' %>
+                  <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                <% when 'error' %>
+                  <i class="fas fa-times-circle text-danger me-2"></i>
+                <% else %>
+                  <i class="fas fa-question-circle text-secondary me-2"></i>
+                <% end %>
+                <div>
+                  <strong><%= component.to_s.humanize %></strong>
+                  <br><small class="text-muted"><%= health[:message] %></small>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-user-clock me-2"></i>활성 사용자
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if @active_users.any? %>
+          <% @active_users.each do |user| %>
+            <div class="d-flex align-items-center mb-2">
+              <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                <%= user.name.first.upcase %>
+              </div>
+              <div class="flex-grow-1">
+                <div class="fw-bold"><%= user.name %></div>
+                <small class="text-muted"><%= user.hospital.name %></small>
+              </div>
+              <small class="text-muted">
+                <%= time_ago_in_words(user.last_login_at) %> 전
+              </small>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted mb-0">현재 활성 사용자가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-tools me-2"></i>빠른 작업
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <%= link_to admin_center_users_path, class: "btn btn-outline-primary w-100" do %>
+              <i class="fas fa-users me-2"></i>사용자 관리
+            <% end %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= link_to admin_center_hospitals_path, class: "btn btn-outline-success w-100" do %>
+              <i class="fas fa-hospital me-2"></i>병원 관리
+            <% end %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <%= link_to admin_system_monitoring_path, class: "btn btn-outline-info w-100" do %>
+              <i class="fas fa-chart-bar me-2"></i>시스템 모니터링
+            <% end %>
+          </div>
+          <div class="col-md-6 mb-3">
+            <button type="button" class="btn btn-outline-warning w-100" onclick="clearCache()">
+              <i class="fas fa-broom me-2"></i>캐시 정리
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-history me-2"></i>최근 활동
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if @recent_activities.any? %>
+          <% @recent_activities.each do |activity| %>
+            <div class="d-flex align-items-start mb-3">
+              <% case activity[:type] %>
+              <% when 'user_registration' %>
+                <i class="fas fa-user-plus text-success me-2 mt-1"></i>
+              <% when 'data_upload' %>
+                <i class="fas fa-upload text-info me-2 mt-1"></i>
+              <% when 'analysis_creation' %>
+                <i class="fas fa-chart-line text-warning me-2 mt-1"></i>
+              <% else %>
+                <i class="fas fa-circle text-secondary me-2 mt-1"></i>
+              <% end %>
+              <div class="flex-grow-1">
+                <div class="small"><%= activity[:description] %></div>
+                <small class="text-muted">
+                  <%= time_ago_in_words(activity[:timestamp]) %> 전
+                  <% if activity[:user] %>
+                    • <%= activity[:user].name %>
+                  <% end %>
+                </small>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-muted mb-0">최근 활동이 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 자동 새로고침 (5분마다)
+  setInterval(function() {
+    // 시스템 상태만 업데이트
+    updateSystemHealth();
+  }, 300000); // 5분
+
+  // 30초마다 활성 사용자 업데이트
+  setInterval(function() {
+    updateActiveUsers();
+  }, 30000);
+});
+
+function clearCache() {
+  if (confirm('시스템 캐시를 정리하시겠습니까?')) {
+    // 실제로는 백엔드 API 호출
+    alert('캐시 정리 기능은 개발 중입니다.');
+  }
+}
+
+function updateSystemHealth() {
+  fetch('/admin/system_health', {
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // 시스템 상태 업데이트
+      updateHealthIndicators(data.health);
+    }
+  })
+  .catch(error => {
+    console.error('System health update failed:', error);
+  });
+}
+
+function updateActiveUsers() {
+  fetch('/admin/active_users', {
+    headers: {
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // 활성 사용자 목록 업데이트
+      updateActiveUsersList(data.users);
+    }
+  })
+  .catch(error => {
+    console.error('Active users update failed:', error);
+  });
+}
+
+function updateHealthIndicators(health) {
+  // 실제 구현에서는 DOM 업데이트
+  console.log('Health updated:', health);
+}
+
+function updateActiveUsersList(users) {
+  // 실제 구현에서는 DOM 업데이트
+  console.log('Active users updated:', users);
+}
+</script>

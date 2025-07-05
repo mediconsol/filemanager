@@ -1,0 +1,259 @@
+<% content_for :title, "ETL 파이프라인 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">ETL 파이프라인</h1>
+    <p class="text-muted mb-0">데이터 추출, 변환, 적재 파이프라인을 관리하세요</p>
+  </div>
+</div>
+
+<!-- ETL Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @etl_stats[:total_pipelines] %></h5>
+        <p class="card-text small text-muted">총 파이프라인</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @etl_stats[:running_jobs] %></h5>
+        <p class="card-text small text-muted">실행 중</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @etl_stats[:completed_jobs] %></h5>
+        <p class="card-text small text-muted">완료</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-danger"><%= @etl_stats[:failed_jobs] %></h5>
+        <p class="card-text small text-muted">실패</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Data Uploads with ETL Status -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">ETL 파이프라인 목록</h5>
+  </div>
+  <div class="card-body">
+    <% if @data_uploads.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>파일명</th>
+              <th>카테고리</th>
+              <th>업로드 시간</th>
+              <th>ETL 상태</th>
+              <th>진행률</th>
+              <th>작업 수</th>
+              <th>업로더</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @data_uploads.each do |upload| %>
+              <% etl_jobs = upload.etl_jobs.order(:created_at) %>
+              <% overall_status = determine_etl_status(etl_jobs) %>
+              <% overall_progress = calculate_etl_progress(etl_jobs) %>
+
+              <tr>
+                <td>
+                  <%= link_to upload.file_name, etl_pipeline_path(upload), class: "text-decoration-none" %>
+                </td>
+                <td>
+                  <% if upload.data_category.present? %>
+                    <span class="badge bg-info"><%= upload.data_category.humanize %></span>
+                  <% else %>
+                    <span class="text-muted">미분류</span>
+                  <% end %>
+                </td>
+                <td><%= time_ago_in_words(upload.created_at) %> 전</td>
+                <td>
+                  <% case overall_status %>
+                  <% when 'completed' %>
+                    <span class="badge bg-success">
+                      <i class="fas fa-check me-1"></i>완료
+                    </span>
+                  <% when 'running' %>
+                    <span class="badge bg-warning">
+                      <i class="fas fa-spinner fa-spin me-1"></i>실행중
+                    </span>
+                  <% when 'failed' %>
+                    <span class="badge bg-danger">
+                      <i class="fas fa-times me-1"></i>실패
+                    </span>
+                  <% when 'pending' %>
+                    <span class="badge bg-secondary">
+                      <i class="fas fa-clock me-1"></i>대기
+                    </span>
+                  <% else %>
+                    <span class="badge bg-light text-dark">
+                      <i class="fas fa-question me-1"></i>미실행
+                    </span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if etl_jobs.any? %>
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar" role="progressbar"
+                           style="width: <%= overall_progress %>%"
+                           aria-valuenow="<%= overall_progress %>"
+                           aria-valuemin="0" aria-valuemax="100">
+                        <%= overall_progress %>%
+                      </div>
+                    </div>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if etl_jobs.any? %>
+                    <span class="badge bg-primary"><%= etl_jobs.count %></span>
+                    <small class="text-muted d-block">
+                      E:<%= etl_jobs.by_type('extract').count %>
+                      T:<%= etl_jobs.by_type('transform').count %>
+                      L:<%= etl_jobs.by_type('load').count %>
+                    </small>
+                  <% else %>
+                    <span class="text-muted">0</span>
+                  <% end %>
+                </td>
+                <td><%= upload.user.name %></td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <%= link_to "보기", etl_pipeline_path(upload), class: "btn btn-outline-primary btn-sm" %>
+                    <% if can? :create, EtlJob %>
+                      <% if etl_jobs.empty? || etl_jobs.all? { |j| %w[completed failed cancelled].include?(j.status) } %>
+                        <button type="button" class="btn btn-success btn-sm start-pipeline-btn"
+                                data-upload-id="<%= upload.id %>">
+                          <i class="fas fa-play me-1"></i>시작
+                        </button>
+                      <% elsif etl_jobs.any? { |j| j.status == 'running' } %>
+                        <button type="button" class="btn btn-warning btn-sm cancel-jobs-btn"
+                                data-upload-id="<%= upload.id %>">
+                          <i class="fas fa-stop me-1"></i>중지
+                        </button>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <%= paginate @data_uploads if respond_to?(:paginate) %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">ETL 파이프라인이 없습니다</h5>
+        <p class="text-muted">먼저 데이터를 업로드하고 매핑을 설정하세요.</p>
+        <%= link_to "데이터 업로드", data_uploads_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ETL 파이프라인 시작 버튼
+  document.querySelectorAll('.start-pipeline-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const uploadId = this.dataset.uploadId;
+
+      if (confirm('ETL 파이프라인을 시작하시겠습니까? 이 작업은 시간이 오래 걸릴 수 있습니다.')) {
+        startPipeline(uploadId, this);
+      }
+    });
+  });
+
+  // ETL 작업 취소 버튼
+  document.querySelectorAll('.cancel-jobs-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const uploadId = this.dataset.uploadId;
+
+      if (confirm('실행 중인 ETL 작업을 취소하시겠습니까?')) {
+        cancelJobs(uploadId, this);
+      }
+    });
+  });
+
+  function startPipeline(uploadId, button) {
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>시작 중...';
+
+    fetch(`/etl_pipeline/${uploadId}/start_pipeline`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('ETL 파이프라인이 시작되었습니다.');
+        location.reload();
+      } else {
+        alert('오류: ' + data.message);
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    })
+    .catch(error => {
+      console.error('Pipeline start error:', error);
+      alert('ETL 파이프라인 시작 중 오류가 발생했습니다.');
+      button.disabled = false;
+      button.innerHTML = originalText;
+    });
+  }
+
+  function cancelJobs(uploadId, button) {
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>취소 중...';
+
+    fetch(`/etl_pipeline/${uploadId}/cancel_jobs`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(data.message);
+        location.reload();
+      } else {
+        alert('오류: ' + data.message);
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    })
+    .catch(error => {
+      console.error('Jobs cancel error:', error);
+      alert('작업 취소 중 오류가 발생했습니다.');
+      button.disabled = false;
+      button.innerHTML = originalText;
+    });
+  }
+});
+</script>

@@ -1,0 +1,577 @@
+<% content_for :title, "분석 탐색 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">분석 탐색</h1>
+    <p class="text-muted mb-0">동적 차트 생성, 피벗 테이블, 드릴다운 분석을 수행하세요</p>
+  </div>
+  <div>
+    <% if can? :create, AnalysisResult %>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAnalysisModal">
+        <i class="fas fa-plus me-2"></i>새 분석
+      </button>
+    <% end %>
+  </div>
+</div>
+
+<!-- Analysis Statistics -->
+<div class="row mb-4">
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @analysis_stats[:total] %></h5>
+        <p class="card-text small text-muted">전체</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @analysis_stats[:financial] %></h5>
+        <p class="card-text small text-muted">재무</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-info"><%= @analysis_stats[:operational] %></h5>
+        <p class="card-text small text-muted">운영</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @analysis_stats[:quality] %></h5>
+        <p class="card-text small text-muted">품질</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-danger"><%= @analysis_stats[:patient] %></h5>
+        <p class="card-text small text-muted">환자</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-secondary"><%= @analysis_stats[:custom] %></h5>
+        <p class="card-text small text-muted">사용자정의</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Analysis Builder -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-chart-line me-2"></i>빠른 분석 생성
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        <label class="form-label">데이터 소스</label>
+        <select id="quickDataSource" class="form-select">
+          <option value="">데이터 소스 선택</option>
+          <% @data_sources.each do |source| %>
+            <option value="<%= source[:table_name] %>" data-category="<%= source[:category] %>">
+              <%= source[:label] %>
+            </option>
+          <% end %>
+        </select>
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label">차트 유형</label>
+        <select id="quickChartType" class="form-select">
+          <option value="">차트 유형 선택</option>
+          <option value="bar">막대 차트</option>
+          <option value="line">선 차트</option>
+          <option value="pie">파이 차트</option>
+          <option value="table">테이블</option>
+        </select>
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label">그룹화 기준</label>
+        <select id="quickGroupBy" class="form-select" disabled>
+          <option value="">그룹화 기준 선택</option>
+        </select>
+      </div>
+      <div class="col-md-3 mb-3">
+        <label class="form-label">&nbsp;</label>
+        <button type="button" id="quickAnalyzeBtn" class="btn btn-success w-100" disabled>
+          <i class="fas fa-play me-2"></i>분석 실행
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analysis Results -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">저장된 분석</h5>
+    <div>
+      <%= form_with url: analysis_explorer_index_path, method: :get, local: true, class: "d-flex" do |form| %>
+        <%= form.select :type,
+            options_for_select([['전체 유형', ''], ['재무', 'financial'], ['운영', 'operational'], ['품질', 'quality'], ['환자', 'patient'], ['사용자정의', 'custom']], params[:type]),
+            {}, { class: "form-select form-select-sm me-2" } %>
+        <%= form.submit "필터", class: "btn btn-outline-primary btn-sm" %>
+      <% end %>
+    </div>
+  </div>
+  <div class="card-body">
+    <% if @analysis_results.any? %>
+      <div class="row">
+        <% @analysis_results.each do |analysis| %>
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="card-title">
+                    <%= link_to analysis.description.presence || "분석 ##{analysis.id}", analysis_explorer_path(analysis), class: "text-decoration-none" %>
+                  </h6>
+                  <span class="badge bg-info"><%= analysis.analysis_type_humanized %></span>
+                </div>
+                <p class="card-text small text-muted">
+                  <%= analysis.user.name %> • <%= time_ago_in_words(analysis.created_at) %> 전
+                </p>
+                <% if analysis.has_chart? %>
+                  <div class="mb-3">
+                    <small class="text-success">
+                      <i class="fas fa-chart-bar me-1"></i>차트 포함
+                    </small>
+                  </div>
+                <% end %>
+              </div>
+              <div class="card-footer bg-transparent">
+                <div class="btn-group btn-group-sm w-100" role="group">
+                  <%= link_to "보기", analysis_explorer_path(analysis), class: "btn btn-outline-primary" %>
+                  <% if can? :update, analysis %>
+                    <%= link_to "수정", edit_analysis_explorer_path(analysis), class: "btn btn-outline-secondary" %>
+                  <% end %>
+                  <% if can? :create, AnalysisResult %>
+                    <%= link_to "복사", duplicate_analysis_explorer_path(analysis), method: :post, class: "btn btn-outline-info" %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Pagination -->
+      <%= paginate @analysis_results if respond_to?(:paginate) %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">저장된 분석이 없습니다</h5>
+        <p class="text-muted">새로운 분석을 생성하여 데이터를 탐색해보세요.</p>
+        <% if can? :create, AnalysisResult %>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAnalysisModal">
+            <i class="fas fa-plus me-2"></i>첫 번째 분석 생성
+          </button>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- New Analysis Modal -->
+<div class="modal fade" id="newAnalysisModal" tabindex="-1" aria-labelledby="newAnalysisModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newAnalysisModalLabel">
+          <i class="fas fa-chart-line me-2"></i>새 분석 생성
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Analysis Builder Interface -->
+        <div class="row">
+          <!-- Configuration Panel -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="card-title mb-0">분석 설정</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">분석 제목</label>
+                  <input type="text" id="analysisTitle" class="form-control" placeholder="분석 제목을 입력하세요">
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">데이터 소스</label>
+                  <select id="analysisDataSource" class="form-select">
+                    <option value="">데이터 소스 선택</option>
+                    <% @data_sources.each do |source| %>
+                      <option value="<%= source[:table_name] %>" data-category="<%= source[:category] %>">
+                        <%= source[:label] %>
+                      </option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">차트 유형</label>
+                  <select id="analysisChartType" class="form-select">
+                    <option value="">차트 유형 선택</option>
+                    <option value="bar">막대 차트</option>
+                    <option value="line">선 차트</option>
+                    <option value="pie">파이 차트</option>
+                    <option value="scatter">산점도</option>
+                    <option value="table">테이블</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">X축 (그룹화)</label>
+                  <select id="analysisXAxis" class="form-select" disabled>
+                    <option value="">X축 선택</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Y축 (값)</label>
+                  <select id="analysisYAxis" class="form-select" disabled>
+                    <option value="">Y축 선택</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">집계 함수</label>
+                  <select id="analysisAggregate" class="form-select">
+                    <option value="sum">합계</option>
+                    <option value="avg">평균</option>
+                    <option value="count">개수</option>
+                    <option value="min">최소값</option>
+                    <option value="max">최대값</option>
+                  </select>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="button" id="previewAnalysisBtn" class="btn btn-primary" disabled>
+                    <i class="fas fa-eye me-2"></i>미리보기
+                  </button>
+                  <button type="button" id="saveAnalysisBtn" class="btn btn-success" disabled>
+                    <i class="fas fa-save me-2"></i>분석 저장
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header">
+                <h6 class="card-title mb-0">미리보기</h6>
+              </div>
+              <div class="card-body">
+                <div id="analysisPreview">
+                  <div class="text-center text-muted py-5">
+                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                    <p>설정을 완료하고 미리보기 버튼을 클릭하세요</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Quick Analysis
+  const quickDataSource = document.getElementById('quickDataSource');
+  const quickChartType = document.getElementById('quickChartType');
+  const quickGroupBy = document.getElementById('quickGroupBy');
+  const quickAnalyzeBtn = document.getElementById('quickAnalyzeBtn');
+
+  // New Analysis Modal
+  const analysisDataSource = document.getElementById('analysisDataSource');
+  const analysisChartType = document.getElementById('analysisChartType');
+  const analysisXAxis = document.getElementById('analysisXAxis');
+  const analysisYAxis = document.getElementById('analysisYAxis');
+  const previewAnalysisBtn = document.getElementById('previewAnalysisBtn');
+  const saveAnalysisBtn = document.getElementById('saveAnalysisBtn');
+
+  let currentAnalysisData = null;
+
+  // Quick Analysis Event Listeners
+  quickDataSource.addEventListener('change', function() {
+    if (this.value) {
+      loadDataSourceColumns(this.value, quickGroupBy);
+      checkQuickAnalysisReady();
+    } else {
+      quickGroupBy.disabled = true;
+      quickGroupBy.innerHTML = '<option value="">그룹화 기준 선택</option>';
+      checkQuickAnalysisReady();
+    }
+  });
+
+  quickChartType.addEventListener('change', checkQuickAnalysisReady);
+  quickGroupBy.addEventListener('change', checkQuickAnalysisReady);
+
+  quickAnalyzeBtn.addEventListener('click', function() {
+    if (quickDataSource.value && quickChartType.value && quickGroupBy.value) {
+      executeQuickAnalysis();
+    }
+  });
+
+  // New Analysis Modal Event Listeners
+  analysisDataSource.addEventListener('change', function() {
+    if (this.value) {
+      loadDataSourceColumns(this.value, analysisXAxis);
+      loadDataSourceColumns(this.value, analysisYAxis);
+      checkAnalysisReady();
+    } else {
+      analysisXAxis.disabled = true;
+      analysisYAxis.disabled = true;
+      analysisXAxis.innerHTML = '<option value="">X축 선택</option>';
+      analysisYAxis.innerHTML = '<option value="">Y축 선택</option>';
+      checkAnalysisReady();
+    }
+  });
+
+  analysisChartType.addEventListener('change', checkAnalysisReady);
+  analysisXAxis.addEventListener('change', checkAnalysisReady);
+  analysisYAxis.addEventListener('change', checkAnalysisReady);
+
+  previewAnalysisBtn.addEventListener('click', previewAnalysis);
+  saveAnalysisBtn.addEventListener('click', saveAnalysis);
+
+  function loadDataSourceColumns(dataSource, targetSelect) {
+    fetch(`/analysis/get_data?data_source=${dataSource}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        targetSelect.disabled = false;
+        targetSelect.innerHTML = '<option value="">선택하세요</option>';
+
+        data.columns.forEach(column => {
+          const option = document.createElement('option');
+          option.value = column.name;
+          option.textContent = column.name;
+          option.dataset.type = column.type;
+          targetSelect.appendChild(option);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error loading columns:', error);
+      alert('컬럼 정보를 불러오는 중 오류가 발생했습니다.');
+    });
+  }
+
+  function checkQuickAnalysisReady() {
+    const ready = quickDataSource.value && quickChartType.value && quickGroupBy.value;
+    quickAnalyzeBtn.disabled = !ready;
+  }
+
+  function checkAnalysisReady() {
+    const ready = analysisDataSource.value && analysisChartType.value &&
+                  analysisXAxis.value && analysisYAxis.value;
+    previewAnalysisBtn.disabled = !ready;
+  }
+
+  function executeQuickAnalysis() {
+    const params = {
+      data_source: quickDataSource.value,
+      chart_type: quickChartType.value,
+      group_by: quickGroupBy.value,
+      aggregate: { [quickGroupBy.value]: 'count' }
+    };
+
+    quickAnalyzeBtn.disabled = true;
+    quickAnalyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>분석 중...';
+
+    fetch('/analysis/create_analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify(params)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        displayQuickAnalysisResult(data);
+      } else {
+        alert('분석 실행 중 오류가 발생했습니다: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Analysis error:', error);
+      alert('분석 실행 중 오류가 발생했습니다.');
+    })
+    .finally(() => {
+      quickAnalyzeBtn.disabled = false;
+      quickAnalyzeBtn.innerHTML = '<i class="fas fa-play me-2"></i>분석 실행';
+    });
+  }
+
+  function previewAnalysis() {
+    const params = {
+      data_source: analysisDataSource.value,
+      chart_type: analysisChartType.value,
+      x_axis: analysisXAxis.value,
+      y_axis: analysisYAxis.value,
+      aggregate: { [analysisYAxis.value]: document.getElementById('analysisAggregate').value },
+      group_by: analysisXAxis.value,
+      title: document.getElementById('analysisTitle').value || '분석 결과'
+    };
+
+    previewAnalysisBtn.disabled = true;
+    previewAnalysisBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>미리보기 중...';
+
+    fetch('/analysis/create_analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify(params)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        currentAnalysisData = data;
+        displayAnalysisPreview(data);
+        saveAnalysisBtn.disabled = false;
+      } else {
+        alert('미리보기 생성 중 오류가 발생했습니다: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Preview error:', error);
+      alert('미리보기 생성 중 오류가 발생했습니다.');
+    })
+    .finally(() => {
+      previewAnalysisBtn.disabled = false;
+      previewAnalysisBtn.innerHTML = '<i class="fas fa-eye me-2"></i>미리보기';
+    });
+  }
+
+  function saveAnalysis() {
+    if (!currentAnalysisData) {
+      alert('먼저 미리보기를 생성하세요.');
+      return;
+    }
+
+    const analysisData = {
+      analysis_type: 'custom',
+      description: document.getElementById('analysisTitle').value || '새 분석',
+      parameters: {
+        data_source: analysisDataSource.value,
+        chart_type: analysisChartType.value,
+        x_axis: analysisXAxis.value,
+        y_axis: analysisYAxis.value
+      },
+      result_data: currentAnalysisData.data,
+      chart_config: currentAnalysisData.chart_config
+    };
+
+    saveAnalysisBtn.disabled = true;
+    saveAnalysisBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>저장 중...';
+
+    fetch('/analysis/save_analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify(analysisData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('분석이 저장되었습니다.');
+        location.reload();
+      } else {
+        alert('분석 저장 중 오류가 발생했습니다: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Save error:', error);
+      alert('분석 저장 중 오류가 발생했습니다.');
+    })
+    .finally(() => {
+      saveAnalysisBtn.disabled = false;
+      saveAnalysisBtn.innerHTML = '<i class="fas fa-save me-2"></i>분석 저장';
+    });
+  }
+
+  function displayQuickAnalysisResult(data) {
+    // 간단한 결과 표시 (실제로는 더 정교한 차트 라이브러리 사용)
+    console.log('Quick Analysis Result:', data);
+    alert('빠른 분석이 완료되었습니다. 상세한 분석을 위해 "새 분석" 버튼을 사용하세요.');
+  }
+
+  function displayAnalysisPreview(data) {
+    const previewContainer = document.getElementById('analysisPreview');
+
+    if (data.chart_config.type === 'table') {
+      displayTablePreview(previewContainer, data);
+    } else {
+      displayChartPreview(previewContainer, data);
+    }
+  }
+
+  function displayTablePreview(container, data) {
+    if (!data.data || !data.data.rows || data.data.rows.length === 0) {
+      container.innerHTML = '<div class="alert alert-warning">표시할 데이터가 없습니다.</div>';
+      return;
+    }
+
+    const rows = data.data.rows;
+    const columns = Object.keys(rows[0]);
+
+    let html = '<div class="table-responsive"><table class="table table-sm table-striped">';
+    html += '<thead><tr>';
+    columns.forEach(col => {
+      html += `<th>${col}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.slice(0, 10).forEach(row => {
+      html += '<tr>';
+      columns.forEach(col => {
+        html += `<td>${row[col] || ''}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+
+    if (rows.length > 10) {
+      html += `<small class="text-muted">처음 10행만 표시됩니다. 전체 ${rows.length}행</small>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  function displayChartPreview(container, data) {
+    // 간단한 차트 미리보기 (실제로는 Chart.js나 다른 차트 라이브러리 사용)
+    container.innerHTML = `
+      <div class="alert alert-info">
+        <h6>${data.chart_config.options.title}</h6>
+        <p>차트 유형: ${data.chart_config.type}</p>
+        <p>데이터 포인트: ${data.data.rows ? data.data.rows.length : 0}개</p>
+        <small class="text-muted">실제 차트는 저장 후 상세 페이지에서 확인할 수 있습니다.</small>
+      </div>
+    `;
+  }
+});
+</script>

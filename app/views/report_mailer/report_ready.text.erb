@@ -1,0 +1,27 @@
+<%= @hospital.name %> - <%= @report_schedule.name %>
+========================================
+
+안녕하세요,
+
+<%= @report_schedule.name %> 리포트가 성공적으로 생성되었습니다.
+
+리포트 정보:
+- 리포트명: <%= @report_schedule.name %>
+- 생성일시: <%= @execution.created_at.strftime('%Y년 %m월 %d일 %H:%M') %>
+- 실행 주기: <%= @report_schedule.frequency_humanized %>
+- 파일 형식: <%= @report_schedule.format_humanized %>
+<% if @execution.file_size.present? %>- 파일 크기: <%= @execution.file_size_mb %> MB<% end %>
+- 실행 시간: <%= @execution.duration_formatted %>
+
+<% if @report_schedule.description.present? %>
+리포트 설명:
+<%= @report_schedule.description %>
+
+<% end %>
+첨부된 파일을 확인하시거나, 시스템에 로그인하여 더 자세한 정보를 확인하실 수 있습니다.
+
+감사합니다.
+
+----------------------------------------
+이 이메일은 <%= @hospital.name %> 병원경영분석시스템에서 자동으로 발송되었습니다.
+문의사항이 있으시면 시스템 관리자에게 연락해주세요.

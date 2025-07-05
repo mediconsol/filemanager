@@ -1,0 +1,158 @@
+<% content_for :title, "#{@category.label} 수정 - 카테고리 관리" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "카테고리", categories_path %></li>
+        <li class="breadcrumb-item"><%= link_to @category.label, category_path(@category) %></li>
+        <li class="breadcrumb-item active" aria-current="page">수정</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1"><%= @category.label %> 수정</h1>
+    <p class="text-muted mb-0">카테고리 정보를 수정합니다</p>
+  </div>
+  <div>
+    <%= link_to "취소", category_path(@category), class: "btn btn-outline-secondary" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">카테고리 정보 수정</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: @category, local: true do |form| %>
+          <% if @category.errors.any? %>
+            <div class="alert alert-danger">
+              <h6>다음 오류를 수정해주세요:</h6>
+              <ul class="mb-0">
+                <% @category.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :name, "카테고리명", class: "form-label" %>
+              <%= form.text_field :name, class: "form-control", readonly: true %>
+              <div class="form-text">카테고리명은 변경할 수 없습니다.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :label, "표시명", class: "form-label" %>
+              <%= form.text_field :label, class: "form-control" %>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :description, "설명", class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 3 %>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :sort_order, "정렬 순서", class: "form-label" %>
+              <%= form.number_field :sort_order, class: "form-control", min: 0 %>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="form-check mt-4">
+                <%= form.check_box :is_active, class: "form-check-input" %>
+                <%= form.label :is_active, "활성 상태", class: "form-check-label" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <%= form.submit "저장", class: "btn btn-primary" %>
+            <%= link_to "취소", category_path(@category), class: "btn btn-outline-secondary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">현재 정보</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row small">
+          <dt class="col-5">생성일:</dt>
+          <dd class="col-7"><%= @category.created_at.strftime('%Y-%m-%d %H:%M') %></dd>
+
+          <dt class="col-5">수정일:</dt>
+          <dd class="col-7"><%= @category.updated_at.strftime('%Y-%m-%d %H:%M') %></dd>
+
+          <dt class="col-5">현재 상태:</dt>
+          <dd class="col-7">
+            <% if @category.is_active? %>
+              <span class="badge bg-success">활성</span>
+            <% else %>
+              <span class="badge bg-secondary">비활성</span>
+            <% end %>
+          </dd>
+
+          <dt class="col-5">필드 수:</dt>
+          <dd class="col-7">
+            <span class="badge bg-info"><%= @category.fields_count %></span>
+          </dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">
+        <h5 class="card-title mb-0">관련 필드</h5>
+      </div>
+      <div class="card-body">
+        <% if @category.standard_fields.any? %>
+          <ul class="list-unstyled mb-0">
+            <% @category.standard_fields.active.ordered.limit(5).each do |field| %>
+              <li class="mb-1">
+                <small>
+                  <code><%= field.name %></code> - <%= field.label %>
+                  <% if field.is_required? %>
+                    <span class="text-danger">*</span>
+                  <% end %>
+                </small>
+              </li>
+            <% end %>
+            <% if @category.fields_count > 5 %>
+              <li class="text-muted small">
+                ... 외 <%= @category.fields_count - 5 %>개
+              </li>
+            <% end %>
+          </ul>
+          <div class="mt-2">
+            <%= link_to "모든 필드 보기", standard_fields_path(category: @category.name), class: "btn btn-sm btn-outline-primary" %>
+          </div>
+        <% else %>
+          <p class="text-muted small mb-0">이 카테고리에는 아직 필드가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header bg-warning">
+        <h6 class="card-title mb-0 text-dark">
+          <i class="fas fa-exclamation-triangle me-2"></i>주의사항
+        </h6>
+      </div>
+      <div class="card-body">
+        <ul class="small text-muted mb-0">
+          <li>카테고리명은 변경할 수 없습니다</li>
+          <li>이 카테고리를 비활성화하면 새 필드 생성 시 선택할 수 없습니다</li>
+          <li>기존 필드들은 영향을 받지 않습니다</li>
+          <% if @category.fields_count > 0 %>
+            <li class="text-warning">이 카테고리에 <%= @category.fields_count %>개의 필드가 있어 삭제할 수 없습니다</li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

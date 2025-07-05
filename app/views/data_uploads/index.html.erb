@@ -1,0 +1,404 @@
+<% content_for :title, "데이터 업로드 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">데이터 업로드</h1>
+    <p class="text-muted mb-0">Excel/CSV 파일을 업로드하여 분석 데이터를 관리하세요</p>
+  </div>
+  <div>
+    <% if can? :create, DataUpload %>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+        <i class="fas fa-plus me-2"></i>새 업로드
+      </button>
+    <% end %>
+  </div>
+</div>
+
+<!-- Upload Statistics -->
+<div class="row mb-4">
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @upload_stats[:total] %></h5>
+        <p class="card-text small text-muted">전체</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @upload_stats[:completed] %></h5>
+        <p class="card-text small text-muted">완료</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @upload_stats[:processing] %></h5>
+        <p class="card-text small text-muted">처리중</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-secondary"><%= @upload_stats[:pending] %></h5>
+        <p class="card-text small text-muted">대기</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-danger"><%= @upload_stats[:failed] %></h5>
+        <p class="card-text small text-muted">실패</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: data_uploads_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-3">
+        <%= form.select :status,
+            options_for_select([['전체 상태', ''], ['대기', 'pending'], ['처리중', 'processing'], ['완료', 'completed'], ['실패', 'failed']], params[:status]),
+            {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.select :category,
+            options_for_select([['전체 카테고리', ''], ['재무', 'financial'], ['운영', 'operational'], ['품질', 'quality'], ['환자', 'patient']], params[:category]),
+            {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.submit "필터 적용", class: "btn btn-outline-primary" %>
+        <%= link_to "초기화", data_uploads_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Upload List -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">업로드 목록</h5>
+  </div>
+  <div class="card-body">
+    <% if @data_uploads.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>파일명</th>
+              <th>카테고리</th>
+              <th>크기</th>
+              <th>상태</th>
+              <th>진행률</th>
+              <th>업로더</th>
+              <th>업로드 시간</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @data_uploads.each do |upload| %>
+              <tr>
+                <td>
+                  <%= link_to upload.file_name, upload, class: "text-decoration-none" %>
+                  <% if upload.has_errors? %>
+                    <i class="fas fa-exclamation-triangle text-warning ms-1" title="오류 있음"></i>
+                  <% end %>
+                </td>
+                <td>
+                  <% if upload.data_category.present? %>
+                    <span class="badge bg-info"><%= upload.data_category.humanize %></span>
+                  <% else %>
+                    <span class="text-muted">미분류</span>
+                  <% end %>
+                </td>
+                <td><%= upload.file_size_mb %> MB</td>
+                <td>
+                  <% case upload.status %>
+                  <% when 'completed' %>
+                    <span class="badge bg-success">완료</span>
+                  <% when 'processing' %>
+                    <span class="badge bg-warning">처리중</span>
+                  <% when 'failed' %>
+                    <span class="badge bg-danger">실패</span>
+                  <% else %>
+                    <span class="badge bg-secondary">대기</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if upload.total_rows.present? && upload.total_rows > 0 %>
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar" role="progressbar"
+                           style="width: <%= upload.success_rate %>%"
+                           aria-valuenow="<%= upload.success_rate %>"
+                           aria-valuemin="0" aria-valuemax="100">
+                        <%= upload.success_rate %>%
+                      </div>
+                    </div>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+                <td><%= upload.user.name %></td>
+                <td><%= time_ago_in_words(upload.created_at) %> 전</td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <%= link_to "보기", upload, class: "btn btn-outline-primary btn-sm" %>
+                    <% if can? :update, upload %>
+                      <%= link_to "수정", edit_data_upload_path(upload), class: "btn btn-outline-secondary btn-sm" %>
+                    <% end %>
+                    <% if can? :destroy, upload %>
+                      <%= link_to "삭제", upload, method: :delete,
+                          confirm: "정말 삭제하시겠습니까?",
+                          class: "btn btn-outline-danger btn-sm" %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <%= paginate @data_uploads if respond_to?(:paginate) %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-upload fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">업로드된 파일이 없습니다</h5>
+        <p class="text-muted">새 파일을 업로드하여 분석을 시작하세요.</p>
+        <% if can? :create, DataUpload %>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            <i class="fas fa-plus me-2"></i>첫 번째 파일 업로드
+          </button>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="uploadModalLabel">
+          <i class="fas fa-upload me-2"></i>데이터 파일 업로드
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Drag and Drop Area -->
+        <div class="upload-area" id="uploadArea">
+          <div class="text-center py-5">
+            <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+            <h5>파일을 여기에 드래그하거나 클릭하여 선택하세요</h5>
+            <p class="text-muted mb-3">
+              지원 형식: CSV, Excel (.xlsx, .xls)<br>
+              최대 크기: 100MB
+            </p>
+            <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls" style="display: none;">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+              <i class="fas fa-folder-open me-2"></i>파일 선택
+            </button>
+          </div>
+        </div>
+
+        <!-- Upload Progress -->
+        <div id="uploadProgress" style="display: none;">
+          <div class="mt-4">
+            <h6>업로드 진행상황</h6>
+            <div class="progress mb-2">
+              <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div id="progressText" class="text-center small text-muted">준비 중...</div>
+          </div>
+        </div>
+
+        <!-- File List -->
+        <div id="fileList" class="mt-4" style="display: none;">
+          <h6>선택된 파일</h6>
+          <div id="selectedFiles"></div>
+        </div>
+
+        <!-- Upload Results -->
+        <div id="uploadResults" class="mt-4" style="display: none;">
+          <h6>업로드 결과</h6>
+          <div id="resultsList"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+        <button type="button" id="uploadBtn" class="btn btn-primary" style="display: none;">
+          <i class="fas fa-upload me-2"></i>업로드 시작
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const uploadArea = document.getElementById('uploadArea');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const selectedFiles = document.getElementById('selectedFiles');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const uploadProgress = document.getElementById('uploadProgress');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const uploadResults = document.getElementById('uploadResults');
+  const resultsList = document.getElementById('resultsList');
+
+  let filesToUpload = [];
+
+  // Drag and drop events
+  uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+  });
+
+  // File input change
+  fileInput.addEventListener('change', function(e) {
+    handleFiles(e.target.files);
+  });
+
+  // Upload button click
+  uploadBtn.addEventListener('click', function() {
+    uploadFiles();
+  });
+
+  function handleFiles(files) {
+    filesToUpload = Array.from(files);
+    displaySelectedFiles();
+    uploadBtn.style.display = filesToUpload.length > 0 ? 'block' : 'none';
+  }
+
+  function displaySelectedFiles() {
+    if (filesToUpload.length === 0) {
+      fileList.style.display = 'none';
+      return;
+    }
+
+    fileList.style.display = 'block';
+    selectedFiles.innerHTML = '';
+
+    filesToUpload.forEach((file, index) => {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'border rounded p-2 mb-2';
+      fileItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>${file.name}</strong>
+            <small class="text-muted d-block">${formatFileSize(file.size)} • ${file.type}</small>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      selectedFiles.appendChild(fileItem);
+    });
+  }
+
+  function removeFile(index) {
+    filesToUpload.splice(index, 1);
+    displaySelectedFiles();
+    uploadBtn.style.display = filesToUpload.length > 0 ? 'block' : 'none';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function uploadFiles() {
+    if (filesToUpload.length === 0) return;
+
+    const formData = new FormData();
+    filesToUpload.forEach(file => {
+      formData.append('files[]', file);
+    });
+
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name="csrf-token"]').content;
+    formData.append('authenticity_token', csrfToken);
+
+    // Show progress
+    uploadProgress.style.display = 'block';
+    uploadBtn.disabled = true;
+    progressText.textContent = '업로드 중...';
+
+    fetch('<%= data_uploads_path %>', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-Token': csrfToken
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      progressBar.style.width = '100%';
+      progressText.textContent = '업로드 완료!';
+
+      if (data.success) {
+        showUploadResults(data.uploads);
+        setTimeout(() => {
+          location.reload(); // 페이지 새로고침
+        }, 2000);
+      } else {
+        showError(data.message || '업로드 중 오류가 발생했습니다.');
+      }
+    })
+    .catch(error => {
+      console.error('Upload error:', error);
+      showError('업로드 중 오류가 발생했습니다.');
+    })
+    .finally(() => {
+      uploadBtn.disabled = false;
+    });
+  }
+
+  function showUploadResults(uploads) {
+    uploadResults.style.display = 'block';
+    resultsList.innerHTML = '';
+
+    uploads.forEach(upload => {
+      const resultItem = document.createElement('div');
+      resultItem.className = 'alert alert-success';
+      resultItem.innerHTML = `
+        <strong>${upload.file_name}</strong> - 업로드 성공
+        <small class="d-block">크기: ${upload.file_size}MB, 카테고리: ${upload.data_category || '미분류'}</small>
+      `;
+      resultsList.appendChild(resultItem);
+    });
+  }
+
+  function showError(message) {
+    uploadResults.style.display = 'block';
+    resultsList.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+  }
+
+  // Make removeFile function global
+  window.removeFile = removeFile;
+});
+</script>

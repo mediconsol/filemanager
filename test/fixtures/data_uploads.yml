@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  hospital: one
+  user: one
+  file_name: MyString
+  file_size: 1
+  file_type: MyString
+  status: MyString
+  original_data: MyText
+  processed_data: MyText
+  error_message: MyText
+
+two:
+  hospital: two
+  user: two
+  file_name: MyString
+  file_size: 1
+  file_type: MyString
+  status: MyString
+  original_data: MyText
+  processed_data: MyText
+  error_message: MyText

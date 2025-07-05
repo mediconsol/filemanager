@@ -1,0 +1,433 @@
+<% content_for :title, "#{@analysis_result.description} - 분석 결과" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "분석 탐색", analysis_explorer_index_path %></li>
+        <li class="breadcrumb-item active" aria-current="page">
+          <%= @analysis_result.description.presence || "분석 ##{@analysis_result.id}" %>
+        </li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1"><%= @analysis_result.description.presence || "분석 ##{@analysis_result.id}" %></h1>
+    <p class="text-muted mb-0">
+      <%= @analysis_result.analysis_type_humanized %> •
+      <%= @analysis_result.user.name %> •
+      <%= time_ago_in_words(@analysis_result.created_at) %> 전
+    </p>
+  </div>
+  <div>
+    <% if can? :update, @analysis_result %>
+      <%= link_to "수정", edit_analysis_explorer_path(@analysis_result), class: "btn btn-outline-primary" %>
+    <% end %>
+    <% if can? :create, AnalysisResult %>
+      <%= link_to "복사", duplicate_analysis_explorer_path(@analysis_result), method: :post, class: "btn btn-outline-info" %>
+    <% end %>
+    <div class="btn-group">
+      <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fas fa-download me-1"></i>내보내기
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="exportToPNG()"><i class="fas fa-image me-2"></i>PNG 이미지</a></li>
+        <li><a class="dropdown-item" href="#" onclick="exportToCSV()"><i class="fas fa-file-csv me-2"></i>CSV 파일</a></li>
+        <li><a class="dropdown-item" href="#" onclick="exportToPDF()"><i class="fas fa-file-pdf me-2"></i>PDF 보고서</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Analysis Summary -->
+<div class="row mb-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-chart-line me-2"></i>분석 결과
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if @chart_config.present? && @chart_config['type'] != 'table' %>
+          <!-- Chart Display -->
+          <div id="analysisChart" style="height: 400px;">
+            <% case @chart_config['type'] %>
+            <% when 'line', 'bar', 'column', 'area' %>
+              <%= line_chart @chart_config['data'],
+                  height: "400px",
+                  colors: ["#667eea", "#764ba2", "#f093fb", "#f5576c"],
+                  library: {
+                    responsive: true,
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: @chart_config.dig('options', 'title')
+                      },
+                      legend: {
+                        display: true,
+                        position: 'bottom'
+                      }
+                    }
+                  } %>
+            <% when 'pie' %>
+              <%= pie_chart @chart_config['data'],
+                  height: "400px",
+                  colors: ["#667eea", "#764ba2", "#f093fb", "#f5576c", "#4facfe", "#00f2fe"],
+                  library: {
+                    responsive: true,
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: @chart_config.dig('options', 'title')
+                      },
+                      legend: {
+                        display: true,
+                        position: 'bottom'
+                      }
+                    }
+                  } %>
+            <% when 'scatter' %>
+              <%= scatter_chart @chart_config['data'],
+                  height: "400px",
+                  colors: ["#667eea"],
+                  library: {
+                    responsive: true,
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: @chart_config.dig('options', 'title')
+                      }
+                    }
+                  } %>
+            <% else %>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                지원하지 않는 차트 유형입니다: <%= @chart_config['type'] %>
+              </div>
+            <% end %>
+          </div>
+        <% elsif @result_data.present? && @result_data['rows'].present? %>
+          <!-- Table Display -->
+          <div class="table-responsive">
+            <table class="table table-striped table-hover" id="analysisTable">
+              <thead class="table-dark">
+                <tr>
+                  <% if @result_data['rows'].first.present? %>
+                    <% @result_data['rows'].first.keys.each do |column| %>
+                      <th><%= column %></th>
+                    <% end %>
+                  <% end %>
+                </tr>
+              </thead>
+              <tbody>
+                <% @result_data['rows'].each do |row| %>
+                  <tr>
+                    <% row.each do |key, value| %>
+                      <td>
+                        <% if value.is_a?(Numeric) %>
+                          <%= number_with_delimiter(value) %>
+                        <% else %>
+                          <%= value %>
+                        <% end %>
+                      </td>
+                    <% end %>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-3">
+            <small class="text-muted">
+              총 <%= @result_data['rows'].count %>개 행 표시
+            </small>
+          </div>
+        <% else %>
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            표시할 분석 결과가 없습니다.
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Analysis Info -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h6 class="card-title mb-0">분석 정보</h6>
+      </div>
+      <div class="card-body">
+        <dl class="row small">
+          <dt class="col-sm-5">유형:</dt>
+          <dd class="col-sm-7">
+            <span class="badge bg-info"><%= @analysis_result.analysis_type_humanized %></span>
+          </dd>
+
+          <dt class="col-sm-5">생성자:</dt>
+          <dd class="col-sm-7"><%= @analysis_result.user.name %></dd>
+
+          <dt class="col-sm-5">생성일:</dt>
+          <dd class="col-sm-7"><%= @analysis_result.created_at.strftime('%Y-%m-%d %H:%M') %></dd>
+
+          <dt class="col-sm-5">수정일:</dt>
+          <dd class="col-sm-7"><%= @analysis_result.updated_at.strftime('%Y-%m-%d %H:%M') %></dd>
+
+          <% if @parameters.present? %>
+            <dt class="col-sm-5">데이터 소스:</dt>
+            <dd class="col-sm-7"><%= @parameters['data_source'] %></dd>
+
+            <% if @parameters['chart_type'].present? %>
+              <dt class="col-sm-5">차트 유형:</dt>
+              <dd class="col-sm-7"><%= @parameters['chart_type'].humanize %></dd>
+            <% end %>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Analysis Parameters -->
+    <% if @parameters.present? && @parameters.any? %>
+      <div class="card mb-4">
+        <div class="card-header">
+          <h6 class="card-title mb-0">분석 매개변수</h6>
+        </div>
+        <div class="card-body">
+          <% @parameters.each do |key, value| %>
+            <% next if value.blank? %>
+            <div class="mb-2">
+              <strong><%= key.humanize %>:</strong>
+              <span class="text-muted"><%= value %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-header">
+        <h6 class="card-title mb-0">빠른 작업</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAnalysis()">
+            <i class="fas fa-sync-alt me-2"></i>데이터 새로고침
+          </button>
+          <button type="button" class="btn btn-outline-info btn-sm" onclick="drillDown()">
+            <i class="fas fa-search-plus me-2"></i>드릴다운 분석
+          </button>
+          <button type="button" class="btn btn-outline-success btn-sm" onclick="addToReport()">
+            <i class="fas fa-plus me-2"></i>리포트에 추가
+          </button>
+          <button type="button" class="btn btn-outline-warning btn-sm" onclick="scheduleReport()">
+            <i class="fas fa-clock me-2"></i>정기 리포트 설정
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drill Down Modal -->
+<div class="modal fade" id="drillDownModal" tabindex="-1" aria-labelledby="drillDownModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="drillDownModalLabel">
+          <i class="fas fa-search-plus me-2"></i>드릴다운 분석
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">추가 필터</label>
+            <select id="drillDownFilter" class="form-select">
+              <option value="">필터 선택</option>
+              <option value="department">부서별</option>
+              <option value="date_range">기간별</option>
+              <option value="category">카테고리별</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">필터 값</label>
+            <input type="text" id="drillDownValue" class="form-control" placeholder="필터 값 입력">
+          </div>
+        </div>
+        <div id="drillDownResult">
+          <!-- 드릴다운 결과가 여기에 표시됩니다 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+        <button type="button" id="executeDrillDown" class="btn btn-primary">
+          <i class="fas fa-search me-2"></i>드릴다운 실행
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 테이블이 있다면 DataTables 초기화
+  const analysisTable = document.getElementById('analysisTable');
+  if (analysisTable && typeof $ !== 'undefined' && $.fn.DataTable) {
+    $(analysisTable).DataTable({
+      responsive: true,
+      pageLength: 25,
+      order: [],
+      language: {
+        url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/ko.json'
+      }
+    });
+  }
+});
+
+function refreshAnalysis() {
+  if (confirm('분석 데이터를 새로고침하시겠습니까?')) {
+    // 실제로는 백엔드에서 데이터를 다시 조회하여 업데이트
+    location.reload();
+  }
+}
+
+function drillDown() {
+  const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+  modal.show();
+
+  document.getElementById('executeDrillDown').addEventListener('click', function() {
+    const filter = document.getElementById('drillDownFilter').value;
+    const value = document.getElementById('drillDownValue').value;
+
+    if (!filter) {
+      alert('필터를 선택해주세요.');
+      return;
+    }
+
+    // 드릴다운 분석 실행
+    executeDrillDownAnalysis(filter, value);
+  });
+}
+
+function executeDrillDownAnalysis(filter, value) {
+  const resultContainer = document.getElementById('drillDownResult');
+  resultContainer.innerHTML = '<div class="text-center py-3"><div class="spinner-border" role="status"></div></div>';
+
+  // 현재 분석의 매개변수를 기반으로 드릴다운 분석 실행
+  const params = {
+    base_analysis_id: <%= @analysis_result.id %>,
+    drill_down_filter: filter,
+    drill_down_value: value
+  };
+
+  fetch('/analysis/create_analysis', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify(params)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      displayDrillDownResult(data);
+    } else {
+      resultContainer.innerHTML = '<div class="alert alert-danger">드릴다운 분석 실행 중 오류가 발생했습니다.</div>';
+    }
+  })
+  .catch(error => {
+    console.error('Drill down error:', error);
+    resultContainer.innerHTML = '<div class="alert alert-danger">드릴다운 분석 실행 중 오류가 발생했습니다.</div>';
+  });
+}
+
+function displayDrillDownResult(data) {
+  const container = document.getElementById('drillDownResult');
+
+  if (data.data && data.data.rows && data.data.rows.length > 0) {
+    const rows = data.data.rows;
+    const columns = Object.keys(rows[0]);
+
+    let html = '<div class="table-responsive"><table class="table table-sm table-striped">';
+    html += '<thead><tr>';
+    columns.forEach(col => {
+      html += `<th>${col}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.slice(0, 10).forEach(row => {
+      html += '<tr>';
+      columns.forEach(col => {
+        html += `<td>${row[col] || ''}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+
+    if (rows.length > 10) {
+      html += `<small class="text-muted">처음 10행만 표시됩니다. 전체 ${rows.length}행</small>`;
+    }
+
+    container.innerHTML = html;
+  } else {
+    container.innerHTML = '<div class="alert alert-warning">드릴다운 결과가 없습니다.</div>';
+  }
+}
+
+function addToReport() {
+  if (confirm('이 분석을 리포트에 추가하시겠습니까?')) {
+    // 리포트 스케줄러로 이동하거나 리포트에 추가하는 로직
+    alert('리포트 기능은 개발 중입니다.');
+  }
+}
+
+function scheduleReport() {
+  if (confirm('이 분석을 정기 리포트로 설정하시겠습니까?')) {
+    // 리포트 스케줄러 페이지로 이동
+    window.location.href = '/report_scheduler';
+  }
+}
+
+function exportToPNG() {
+  // 차트를 PNG로 내보내기
+  const chartElement = document.getElementById('analysisChart');
+  if (chartElement) {
+    // html2canvas 라이브러리 사용 (실제 구현 시)
+    alert('PNG 내보내기 기능은 개발 중입니다.');
+  } else {
+    alert('내보낼 차트가 없습니다.');
+  }
+}
+
+function exportToCSV() {
+  // 테이블 데이터를 CSV로 내보내기
+  const table = document.getElementById('analysisTable');
+  if (table) {
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const csvContent = rows.map(row => {
+      const cells = Array.from(row.querySelectorAll('th, td'));
+      return cells.map(cell => `"${cell.textContent.trim()}"`).join(',');
+    }).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'analysis_result.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else {
+    alert('내보낼 데이터가 없습니다.');
+  }
+}
+
+function exportToPDF() {
+  // PDF 리포트 생성
+  alert('PDF 내보내기 기능은 개발 중입니다.');
+}
+</script>

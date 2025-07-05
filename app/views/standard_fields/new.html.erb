@@ -1,0 +1,139 @@
+<% content_for :title, "새 표준 필드 추가 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "표준 필드", standard_fields_path %></li>
+        <li class="breadcrumb-item active" aria-current="page">새 필드 추가</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1">새 표준 필드 추가</h1>
+    <p class="text-muted mb-0">새로운 표준 필드를 생성합니다</p>
+  </div>
+  <div>
+    <%= link_to "취소", standard_fields_path, class: "btn btn-outline-secondary" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">필드 정보</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: @standard_field, local: true do |form| %>
+          <% if @standard_field.errors.any? %>
+            <div class="alert alert-danger">
+              <h6>다음 오류를 수정해주세요:</h6>
+              <ul class="mb-0">
+                <% @standard_field.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :name, "필드명", class: "form-label" %>
+              <%= form.text_field :name, class: "form-control", placeholder: "예: patient_age" %>
+              <div class="form-text">소문자, 숫자, 언더스코어만 사용 가능합니다.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :label, "표시명", class: "form-label" %>
+              <%= form.text_field :label, class: "form-control", placeholder: "예: 환자 나이" %>
+              <div class="form-text">사용자에게 표시될 이름입니다.</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :category, "카테고리", class: "form-label" %>
+              <%= form.select :category, StandardField.categories_for_select,
+                  { selected: params[:category] }, { class: "form-select" } %>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :data_type, "데이터 타입", class: "form-label" %>
+              <%= form.select :data_type, StandardField.data_types_for_select,
+                  { prompt: "타입을 선택하세요" }, { class: "form-select" } %>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :description, "설명", class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 3,
+                placeholder: "이 필드에 대한 설명을 입력하세요..." %>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :sort_order, "정렬 순서", class: "form-label" %>
+              <%= form.number_field :sort_order, class: "form-control", min: 0 %>
+              <div class="form-text">낮은 숫자가 먼저 표시됩니다.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :default_value, "기본값", class: "form-label" %>
+              <%= form.text_field :default_value, class: "form-control", placeholder: "선택사항" %>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <%= form.check_box :is_required, class: "form-check-input" %>
+                <%= form.label :is_required, "필수 필드", class: "form-check-label" %>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <%= form.check_box :is_active, class: "form-check-input", checked: true %>
+                <%= form.label :is_active, "활성 상태", class: "form-check-label" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <%= form.submit "필드 생성", class: "btn btn-primary" %>
+            <%= link_to "취소", standard_fields_path, class: "btn btn-outline-secondary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">도움말</h5>
+      </div>
+      <div class="card-body">
+        <h6>필드명 규칙</h6>
+        <ul class="small text-muted">
+          <li>소문자로 시작</li>
+          <li>영문자, 숫자, 언더스코어(_)만 사용</li>
+          <li>공백이나 특수문자 사용 불가</li>
+          <li>예: patient_id, revenue_amount</li>
+        </ul>
+
+        <h6>데이터 타입</h6>
+        <ul class="small text-muted">
+          <li><strong>문자열:</strong> 이름, 주소 등</li>
+          <li><strong>정수:</strong> 나이, 개수 등</li>
+          <li><strong>실수:</strong> 금액, 비율 등</li>
+          <li><strong>날짜:</strong> 생년월일, 입원일 등</li>
+          <li><strong>참/거짓:</strong> 재입원 여부 등</li>
+        </ul>
+
+        <h6>카테고리별 예시</h6>
+        <ul class="small text-muted">
+          <li><strong>재무:</strong> 수익, 비용, 부서코드</li>
+          <li><strong>운영:</strong> 병상수, 직원수, 가동률</li>
+          <li><strong>품질:</strong> 만족도, 재입원율</li>
+          <li><strong>환자:</strong> 환자ID, 나이, 진단명</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

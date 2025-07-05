@@ -1,0 +1,21 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  report_schedule: one
+  status: MyString
+  started_at: 2025-07-04 22:45:02
+  completed_at: 2025-07-04 22:45:02
+  file_path: MyString
+  file_size: 1
+  error_message: MyText
+  execution_time: 1
+
+two:
+  report_schedule: two
+  status: MyString
+  started_at: 2025-07-04 22:45:02
+  completed_at: 2025-07-04 22:45:02
+  file_path: MyString
+  file_size: 1
+  error_message: MyText
+  execution_time: 1

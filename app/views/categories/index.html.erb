@@ -1,0 +1,130 @@
+<% content_for :title, "카테고리 관리 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">카테고리 관리</h1>
+    <p class="text-muted mb-0">표준 필드 카테고리를 생성하고 관리하세요</p>
+  </div>
+  <div>
+    <%= link_to "새 카테고리 추가", new_category_path, class: "btn btn-primary" %>
+    <%= link_to "표준 필드 관리", standard_fields_path, class: "btn btn-outline-secondary" %>
+  </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @stats[:total_categories] %></h5>
+        <p class="card-text small text-muted">총 카테고리</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @stats[:active_categories] %></h5>
+        <p class="card-text small text-muted">활성 카테고리</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-info"><%= @stats[:total_fields] %></h5>
+        <p class="card-text small text-muted">총 필드</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @stats[:active_fields] %></h5>
+        <p class="card-text small text-muted">활성 필드</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Categories List -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">카테고리 목록</h5>
+  </div>
+  <div class="card-body">
+    <% if @categories.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>순서</th>
+              <th>카테고리명</th>
+              <th>표시명</th>
+              <th>필드 수</th>
+              <th>활성 필드</th>
+              <th>필수 필드</th>
+              <th>상태</th>
+              <th>설명</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @categories.each do |category| %>
+              <tr class="<%= 'table-secondary' unless category.is_active? %>">
+                <td>
+                  <span class="badge bg-light text-dark"><%= category.sort_order %></span>
+                </td>
+                <td>
+                  <code><%= category.name %></code>
+                </td>
+                <td>
+                  <%= link_to category.label, category_path(category), class: "text-decoration-none" %>
+                </td>
+                <td>
+                  <span class="badge bg-info"><%= category.fields_count %></span>
+                </td>
+                <td>
+                  <span class="badge bg-success"><%= category.active_fields_count %></span>
+                </td>
+                <td>
+                  <span class="badge bg-warning"><%= category.required_fields_count %></span>
+                </td>
+                <td>
+                  <% if category.is_active? %>
+                    <span class="badge bg-success">활성</span>
+                  <% else %>
+                    <span class="badge bg-secondary">비활성</span>
+                  <% end %>
+                </td>
+                <td>
+                  <small class="text-muted">
+                    <%= truncate(category.description, length: 50) if category.description.present? %>
+                  </small>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <%= link_to "보기", category_path(category), class: "btn btn-outline-primary btn-sm" %>
+                    <%= link_to "수정", edit_category_path(category), class: "btn btn-outline-secondary btn-sm" %>
+                    <% if category.fields_count == 0 %>
+                      <%= link_to "삭제", category_path(category), method: :delete,
+                          confirm: "정말 삭제하시겠습니까?", class: "btn btn-outline-danger btn-sm" %>
+                    <% else %>
+                      <button class="btn btn-outline-danger btn-sm" disabled title="필드가 있어 삭제할 수 없습니다">삭제</button>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-center py-4">
+        <i class="fas fa-plus-circle fa-2x text-muted mb-2"></i>
+        <p class="text-muted">아직 카테고리가 없습니다.</p>
+        <%= link_to "첫 번째 카테고리 추가", new_category_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

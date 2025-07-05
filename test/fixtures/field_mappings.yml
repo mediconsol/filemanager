@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  hospital: one
+  data_upload: one
+  source_field: MyString
+  target_field: MyString
+  mapping_type: MyString
+  transformation_rules: MyText
+  is_active: false
+
+two:
+  hospital: two
+  data_upload: two
+  source_field: MyString
+  target_field: MyString
+  mapping_type: MyString
+  transformation_rules: MyText
+  is_active: false

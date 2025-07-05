@@ -1,0 +1,380 @@
+<% content_for :title, "새 리포트 스케줄 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "리포트 스케줄러", report_scheduler_index_path %></li>
+        <li class="breadcrumb-item active" aria-current="page">새 스케줄</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1">새 리포트 스케줄</h1>
+    <p class="text-muted mb-0">정기적으로 생성할 리포트를 설정하세요</p>
+  </div>
+</div>
+
+<%= form_with model: @report_schedule, url: report_scheduler_index_path, local: true, class: "needs-validation", novalidate: true do |form| %>
+  <% if @report_schedule.errors.any? %>
+    <div class="alert alert-danger">
+      <h6>다음 오류를 수정해주세요:</h6>
+      <ul class="mb-0">
+        <% @report_schedule.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="row">
+    <!-- 기본 정보 -->
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">기본 정보</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :name, "리포트명", class: "form-label" %>
+              <%= form.text_field :name, class: "form-control", placeholder: "예: 월간 재무 리포트", required: true %>
+              <div class="invalid-feedback">리포트명을 입력해주세요.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :frequency, "실행 주기", class: "form-label" %>
+              <%= form.select :frequency,
+                  options_for_select(ReportSchedule.frequencies_for_select),
+                  { prompt: "주기 선택" },
+                  { class: "form-select", required: true } %>
+              <div class="invalid-feedback">실행 주기를 선택해주세요.</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <%= form.label :format, "파일 형식", class: "form-label" %>
+              <%= form.select :format,
+                  options_for_select(ReportSchedule.formats_for_select),
+                  { prompt: "형식 선택" },
+                  { class: "form-select", required: true } %>
+              <div class="invalid-feedback">파일 형식을 선택해주세요.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <%= form.label :status, "상태", class: "form-label" %>
+              <%= form.select :status,
+                  options_for_select([['활성', 'active'], ['비활성', 'inactive']], 'active'),
+                  {},
+                  { class: "form-select" } %>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :description, "설명", class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 3, placeholder: "리포트에 대한 설명을 입력하세요" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- 리포트 구성 -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">리포트 구성</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">리포트 템플릿</label>
+            <div class="row">
+              <% @report_templates.each do |template| %>
+                <div class="col-md-6 mb-3">
+                  <div class="card template-card" data-template-id="<%= template[:id] %>">
+                    <div class="card-body">
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="template"
+                               id="template_<%= template[:id] %>" value="<%= template[:id] %>">
+                        <label class="form-check-label" for="template_<%= template[:id] %>">
+                          <strong><%= template[:name] %></strong>
+                        </label>
+                      </div>
+                      <p class="small text-muted mb-2"><%= template[:description] %></p>
+                      <div class="small">
+                        <strong>포함 섹션:</strong>
+                        <% template[:sections].each do |section| %>
+                          <span class="badge bg-light text-dark me-1"><%= section.humanize %></span>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <div id="customAnalysisSection" style="display: none;">
+            <label class="form-label">포함할 분석 선택</label>
+            <div class="row">
+              <% @available_analyses.each do |analysis| %>
+                <div class="col-md-6 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="selected_analyses[]"
+                           value="<%= analysis[:id] %>" id="analysis_<%= analysis[:id] %>">
+                    <label class="form-check-label" for="analysis_<%= analysis[:id] %>">
+                      <%= analysis[:name] %>
+                      <small class="text-muted">(<%= analysis[:type].humanize %>)</small>
+                    </label>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수신자 설정 -->
+    <div class="col-lg-4">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">수신자 설정</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">이메일 수신자</label>
+            <div id="recipientsList">
+              <div class="recipient-item mb-2">
+                <div class="input-group">
+                  <input type="email" class="form-control" name="recipients[]"
+                         placeholder="이메일 주소" required>
+                  <button type="button" class="btn btn-outline-danger remove-recipient">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" id="addRecipient" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-plus me-1"></i>수신자 추가
+            </button>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="sendToCreator" checked>
+              <label class="form-check-label" for="sendToCreator">
+                생성자에게도 발송
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 미리보기 -->
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">설정 미리보기</h5>
+        </div>
+        <div class="card-body">
+          <div id="schedulePreview">
+            <p class="text-muted">설정을 완료하면 미리보기가 표시됩니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between mt-4">
+    <%= link_to "취소", report_scheduler_index_path, class: "btn btn-secondary" %>
+    <div>
+      <button type="button" id="previewBtn" class="btn btn-outline-info me-2">
+        <i class="fas fa-eye me-1"></i>미리보기
+      </button>
+      <%= form.submit "스케줄 생성", class: "btn btn-primary" %>
+    </div>
+  </div>
+<% end %>
+
+<style>
+.template-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.template-card:hover {
+  border-color: #0d6efd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.template-card.selected {
+  border-color: #0d6efd;
+  background-color: #f8f9ff;
+}
+
+.recipient-item {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const templateCards = document.querySelectorAll('.template-card');
+  const customAnalysisSection = document.getElementById('customAnalysisSection');
+  const addRecipientBtn = document.getElementById('addRecipient');
+  const recipientsList = document.getElementById('recipientsList');
+  const previewBtn = document.getElementById('previewBtn');
+  const schedulePreview = document.getElementById('schedulePreview');
+
+  // 템플릿 선택
+  templateCards.forEach(card => {
+    card.addEventListener('click', function() {
+      // 모든 카드에서 selected 클래스 제거
+      templateCards.forEach(c => c.classList.remove('selected'));
+
+      // 클릭된 카드에 selected 클래스 추가
+      this.classList.add('selected');
+
+      // 라디오 버튼 체크
+      const radio = this.querySelector('input[type="radio"]');
+      radio.checked = true;
+
+      // 사용자 정의 리포트인 경우 분석 선택 섹션 표시
+      const templateId = this.dataset.templateId;
+      if (templateId === 'custom_report') {
+        customAnalysisSection.style.display = 'block';
+      } else {
+        customAnalysisSection.style.display = 'none';
+      }
+
+      updatePreview();
+    });
+  });
+
+  // 수신자 추가
+  addRecipientBtn.addEventListener('click', function() {
+    const recipientItem = document.createElement('div');
+    recipientItem.className = 'recipient-item mb-2';
+    recipientItem.innerHTML = `
+      <div class="input-group">
+        <input type="email" class="form-control" name="recipients[]"
+               placeholder="이메일 주소" required>
+        <button type="button" class="btn btn-outline-danger remove-recipient">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+
+    recipientsList.appendChild(recipientItem);
+
+    // 새로 추가된 삭제 버튼에 이벤트 리스너 추가
+    const removeBtn = recipientItem.querySelector('.remove-recipient');
+    removeBtn.addEventListener('click', function() {
+      recipientItem.remove();
+      updatePreview();
+    });
+
+    updatePreview();
+  });
+
+  // 기존 삭제 버튼들에 이벤트 리스너 추가
+  document.querySelectorAll('.remove-recipient').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const recipientItems = document.querySelectorAll('.recipient-item');
+      if (recipientItems.length > 1) {
+        btn.closest('.recipient-item').remove();
+        updatePreview();
+      } else {
+        alert('최소 한 명의 수신자가 필요합니다.');
+      }
+    });
+  });
+
+  // 폼 필드 변경 시 미리보기 업데이트
+  document.querySelectorAll('input, select, textarea').forEach(field => {
+    field.addEventListener('change', updatePreview);
+    field.addEventListener('input', updatePreview);
+  });
+
+  // 미리보기 업데이트 함수
+  function updatePreview() {
+    const name = document.querySelector('[name="report_schedule[name]"]').value;
+    const frequency = document.querySelector('[name="report_schedule[frequency]"]').value;
+    const format = document.querySelector('[name="report_schedule[format]"]').value;
+    const selectedTemplate = document.querySelector('input[name="template"]:checked');
+    const recipients = Array.from(document.querySelectorAll('[name="recipients[]"]'))
+                           .map(input => input.value)
+                           .filter(email => email.trim() !== '');
+
+    let previewHtml = '';
+
+    if (name) {
+      previewHtml += `<p><strong>리포트명:</strong> ${name}</p>`;
+    }
+
+    if (frequency) {
+      previewHtml += `<p><strong>실행 주기:</strong> ${getFrequencyText(frequency)}</p>`;
+    }
+
+    if (format) {
+      previewHtml += `<p><strong>파일 형식:</strong> ${format.toUpperCase()}</p>`;
+    }
+
+    if (selectedTemplate) {
+      const templateName = selectedTemplate.closest('.template-card').querySelector('strong').textContent;
+      previewHtml += `<p><strong>템플릿:</strong> ${templateName}</p>`;
+    }
+
+    if (recipients.length > 0) {
+      previewHtml += `<p><strong>수신자:</strong> ${recipients.length}명</p>`;
+      previewHtml += `<ul class="small">`;
+      recipients.slice(0, 3).forEach(email => {
+        previewHtml += `<li>${email}</li>`;
+      });
+      if (recipients.length > 3) {
+        previewHtml += `<li>외 ${recipients.length - 3}명</li>`;
+      }
+      previewHtml += `</ul>`;
+    }
+
+    if (previewHtml === '') {
+      previewHtml = '<p class="text-muted">설정을 완료하면 미리보기가 표시됩니다.</p>';
+    }
+
+    schedulePreview.innerHTML = previewHtml;
+  }
+
+  function getFrequencyText(frequency) {
+    const frequencies = {
+      'daily': '매일',
+      'weekly': '매주',
+      'monthly': '매월',
+      'quarterly': '분기별',
+      'yearly': '매년'
+    };
+    return frequencies[frequency] || frequency;
+  }
+
+  // 미리보기 버튼
+  previewBtn.addEventListener('click', function() {
+    const formData = new FormData(document.querySelector('form'));
+
+    // 간단한 미리보기 표시
+    alert('리포트 미리보기 기능은 개발 중입니다.');
+  });
+
+  // 폼 검증
+  const form = document.querySelector('.needs-validation');
+  form.addEventListener('submit', function(event) {
+    if (!form.checkValidity()) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    form.classList.add('was-validated');
+  });
+
+  // 초기 미리보기 업데이트
+  updatePreview();
+});
+</script>

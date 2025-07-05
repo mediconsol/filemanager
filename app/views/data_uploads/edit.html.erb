@@ -1,0 +1,137 @@
+<% content_for :title, "#{@data_upload.file_name} 수정 - 데이터 업로드" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "데이터 업로드", data_uploads_path %></li>
+        <li class="breadcrumb-item"><%= link_to @data_upload.file_name, data_upload_path(@data_upload) %></li>
+        <li class="breadcrumb-item active" aria-current="page">수정</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1"><%= @data_upload.file_name %> 수정</h1>
+    <p class="text-muted mb-0">업로드 정보를 수정합니다</p>
+  </div>
+  <div>
+    <%= link_to "취소", data_upload_path(@data_upload), class: "btn btn-outline-secondary" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">업로드 정보 수정</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: @data_upload, local: true do |form| %>
+          <% if @data_upload.errors.any? %>
+            <div class="alert alert-danger">
+              <h6>다음 오류를 수정해주세요:</h6>
+              <ul class="mb-0">
+                <% @data_upload.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="mb-3">
+            <%= form.label :file_name, "파일명", class: "form-label" %>
+            <%= form.text_field :file_name, class: "form-control", readonly: true %>
+            <div class="form-text">파일명은 변경할 수 없습니다.</div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :data_category, "데이터 카테고리", class: "form-label" %>
+            <%= form.select :data_category, 
+                options_for_select([
+                  ['재무 데이터', 'financial'],
+                  ['운영 데이터', 'operational'],
+                  ['환자 데이터', 'patient'],
+                  ['품질 데이터', 'quality'],
+                  ['기타', 'other']
+                ], @data_upload.data_category), 
+                { prompt: '카테고리를 선택하세요' }, 
+                { class: "form-select" } %>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :description, "설명", class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 3, 
+                placeholder: "이 데이터에 대한 설명을 입력하세요..." %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">현재 상태</label>
+            <div>
+              <% case @data_upload.status %>
+              <% when 'completed' %>
+                <span class="badge bg-success">완료</span>
+              <% when 'processing' %>
+                <span class="badge bg-warning">처리중</span>
+              <% when 'failed' %>
+                <span class="badge bg-danger">실패</span>
+              <% else %>
+                <span class="badge bg-secondary">대기</span>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <%= form.submit "저장", class: "btn btn-primary" %>
+            <%= link_to "취소", data_upload_path(@data_upload), class: "btn btn-outline-secondary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">파일 정보</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row small">
+          <dt class="col-5">파일 크기:</dt>
+          <dd class="col-7"><%= @data_upload.file_size_mb %> MB</dd>
+
+          <dt class="col-5">파일 형식:</dt>
+          <dd class="col-7"><%= @data_upload.file_type %></dd>
+
+          <dt class="col-5">업로드 시간:</dt>
+          <dd class="col-7"><%= @data_upload.created_at.strftime('%Y-%m-%d %H:%M') %></dd>
+
+          <dt class="col-5">업로더:</dt>
+          <dd class="col-7"><%= @data_upload.user.name %></dd>
+
+          <% if @data_upload.total_rows.present? %>
+            <dt class="col-5">총 행 수:</dt>
+            <dd class="col-7"><%= number_with_delimiter(@data_upload.total_rows) %></dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+
+    <% if @data_upload.validation_errors.present? && @data_upload.validation_errors.any? %>
+      <div class="card mt-3">
+        <div class="card-header bg-warning">
+          <h6 class="card-title mb-0 text-dark">
+            <i class="fas fa-exclamation-triangle me-2"></i>검증 오류
+          </h6>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0 small">
+            <% @data_upload.validation_errors.each do |error| %>
+              <li class="mb-1">
+                <i class="fas fa-times-circle text-danger me-1"></i>
+                <%= error %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

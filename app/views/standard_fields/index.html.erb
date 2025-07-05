@@ -1,0 +1,137 @@
+<% content_for :title, "표준 필드 관리 - 병원경영분석시스템" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">표준 필드 관리</h1>
+    <p class="text-muted mb-0">카테고리별 표준 필드를 생성하고 관리하세요</p>
+  </div>
+  <div>
+    <%= link_to "새 필드 추가", new_standard_field_path, class: "btn btn-primary" %>
+  </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @stats[:total_fields] %></h5>
+        <p class="card-text small text-muted">총 필드</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @stats[:active_fields] %></h5>
+        <p class="card-text small text-muted">활성 필드</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @stats[:required_fields] %></h5>
+        <p class="card-text small text-muted">필수 필드</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-info"><%= @stats[:categories_count] %></h5>
+        <p class="card-text small text-muted">카테고리</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fields by Category -->
+<% @categories.each do |category_key, category_name| %>
+  <% fields = @fields_by_category[category_key] || [] %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-tag me-2"></i><%= category_name %>
+          <span class="badge bg-secondary ms-2"><%= fields.count %></span>
+        </h5>
+        <%= link_to "필드 추가", new_standard_field_path(category: category_key), class: "btn btn-sm btn-outline-primary" %>
+      </div>
+    </div>
+    <div class="card-body">
+      <% if fields.any? %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>순서</th>
+                <th>필드명</th>
+                <th>라벨</th>
+                <th>데이터 타입</th>
+                <th>필수여부</th>
+                <th>상태</th>
+                <th>설명</th>
+                <th>작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% fields.each do |field| %>
+                <tr class="<%= 'table-secondary' unless field.is_active? %>">
+                  <td>
+                    <span class="badge bg-light text-dark"><%= field.sort_order %></span>
+                  </td>
+                  <td>
+                    <code><%= field.name %></code>
+                  </td>
+                  <td>
+                    <%= field.label %>
+                    <% if field.is_required? %>
+                      <span class="text-danger">*</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge bg-info"><%= field.data_type_humanized %></span>
+                  </td>
+                  <td>
+                    <% if field.is_required? %>
+                      <span class="badge bg-warning">필수</span>
+                    <% else %>
+                      <span class="badge bg-light text-dark">선택</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <% if field.is_active? %>
+                      <span class="badge bg-success">활성</span>
+                    <% else %>
+                      <span class="badge bg-secondary">비활성</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      <%= truncate(field.description, length: 50) if field.description.present? %>
+                    </small>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <%= link_to "보기", standard_field_path(field), class: "btn btn-outline-primary btn-sm" %>
+                      <%= link_to "수정", edit_standard_field_path(field), class: "btn btn-outline-secondary btn-sm" %>
+                      <%= link_to "삭제", standard_field_path(field), method: :delete,
+                          confirm: "정말 삭제하시겠습니까?", class: "btn btn-outline-danger btn-sm" %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="text-center py-4">
+          <i class="fas fa-plus-circle fa-2x text-muted mb-2"></i>
+          <p class="text-muted">이 카테고리에는 아직 필드가 없습니다.</p>
+          <%= link_to "첫 번째 필드 추가", new_standard_field_path(category: category_key), class: "btn btn-primary btn-sm" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

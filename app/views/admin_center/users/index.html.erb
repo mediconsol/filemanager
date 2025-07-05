@@ -1,0 +1,350 @@
+<% content_for :title, "사용자 관리 - 관리자 센터" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "관리자 센터", admin_center_path %></li>
+        <li class="breadcrumb-item active" aria-current="page">사용자 관리</li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1">사용자 관리</h1>
+    <p class="text-muted mb-0">시스템 사용자 계정 관리</p>
+  </div>
+  <div>
+    <%= link_to "새 사용자", new_admin_center_user_path, class: "btn btn-primary" %>
+  </div>
+</div>
+
+<!-- User Statistics -->
+<div class="row mb-4">
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-primary"><%= @user_stats[:total] %></h5>
+        <p class="card-text small text-muted">전체</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-success"><%= @user_stats[:active] %></h5>
+        <p class="card-text small text-muted">활성</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-secondary"><%= @user_stats[:inactive] %></h5>
+        <p class="card-text small text-muted">비활성</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-danger"><%= @user_stats[:admins] %></h5>
+        <p class="card-text small text-muted">관리자</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-info"><%= @user_stats[:analysts] %></h5>
+        <p class="card-text small text-muted">분석가</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-sm-4 col-6 mb-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><%= @user_stats[:viewers] %></h5>
+        <p class="card-text small text-muted">조회자</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: admin_center_users_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-3">
+        <%= form.text_field :search, value: params[:search], placeholder: "이름 또는 이메일 검색", class: "form-control" %>
+      </div>
+      <div class="col-md-2">
+        <%= form.select :hospital_id, 
+            options_from_collection_for_select(@hospitals, :id, :name, params[:hospital_id]),
+            { prompt: "전체 병원" }, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.select :role,
+            options_for_select([['전체 역할', ''], ['관리자', 'admin'], ['분석가', 'analyst'], ['조회자', 'viewer']], params[:role]),
+            {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-2">
+        <%= form.select :is_active,
+            options_for_select([['전체 상태', ''], ['활성', 'true'], ['비활성', 'false']], params[:is_active]),
+            {}, { class: "form-select" } %>
+      </div>
+      <div class="col-md-3">
+        <%= form.submit "검색", class: "btn btn-outline-primary" %>
+        <%= link_to "초기화", admin_center_users_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Bulk Actions -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: bulk_action_admin_center_users_path, method: :post, local: true, id: "bulkActionForm" do |form| %>
+      <div class="row align-items-center">
+        <div class="col-md-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="selectAll">
+            <label class="form-check-label" for="selectAll">
+              전체 선택
+            </label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <%= form.select :bulk_action,
+              options_for_select([['작업 선택', ''], ['활성화', 'activate'], ['비활성화', 'deactivate'], ['삭제', 'delete']]),
+              {}, { class: "form-select", id: "bulkActionSelect" } %>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-warning" id="bulkActionBtn" disabled>
+            <i class="fas fa-cogs me-1"></i>실행
+          </button>
+        </div>
+        <div class="col-md-3 text-end">
+          <span id="selectedCount" class="text-muted">0개 선택됨</span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">사용자 목록</h5>
+  </div>
+  <div class="card-body">
+    <% if @users.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th width="50">
+                <input type="checkbox" id="selectAllTable" class="form-check-input">
+              </th>
+              <th>사용자</th>
+              <th>병원</th>
+              <th>역할</th>
+              <th>상태</th>
+              <th>마지막 로그인</th>
+              <th>가입일</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @users.each do |user| %>
+              <tr>
+                <td>
+                  <input type="checkbox" name="user_ids[]" value="<%= user.id %>" 
+                         class="form-check-input user-checkbox">
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                      <%= user.name.first.upcase %>
+                    </div>
+                    <div>
+                      <%= link_to user.name, admin_center_user_path(user), class: "fw-bold text-decoration-none" %>
+                      <br><small class="text-muted"><%= user.email %></small>
+                    </div>
+                  </div>
+                </td>
+                <td><%= user.hospital.name %></td>
+                <td>
+                  <% case user.role %>
+                  <% when 'admin' %>
+                    <span class="badge bg-danger">관리자</span>
+                  <% when 'analyst' %>
+                    <span class="badge bg-info">분석가</span>
+                  <% when 'viewer' %>
+                    <span class="badge bg-warning">조회자</span>
+                  <% else %>
+                    <span class="badge bg-secondary"><%= user.role %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if user.is_active? %>
+                    <span class="badge bg-success">활성</span>
+                  <% else %>
+                    <span class="badge bg-secondary">비활성</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if user.last_login_at.present? %>
+                    <%= time_ago_in_words(user.last_login_at) %> 전
+                  <% else %>
+                    <span class="text-muted">없음</span>
+                  <% end %>
+                </td>
+                <td><%= user.created_at.strftime('%Y-%m-%d') %></td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <%= link_to "보기", admin_center_user_path(user), class: "btn btn-outline-primary btn-sm" %>
+                    <%= link_to "수정", edit_admin_center_user_path(user), class: "btn btn-outline-secondary btn-sm" %>
+                    
+                    <% if user.is_active? %>
+                      <%= link_to "비활성화", deactivate_admin_center_user_path(user), 
+                          method: :patch, class: "btn btn-outline-warning btn-sm",
+                          confirm: "이 사용자를 비활성화하시겠습니까?" %>
+                    <% else %>
+                      <%= link_to "활성화", activate_admin_center_user_path(user), 
+                          method: :patch, class: "btn btn-outline-success btn-sm" %>
+                    <% end %>
+                    
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle" 
+                              data-bs-toggle="dropdown">
+                        더보기
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li>
+                          <%= link_to "비밀번호 재설정", reset_password_admin_center_user_path(user), 
+                              method: :post, class: "dropdown-item",
+                              confirm: "이 사용자의 비밀번호를 재설정하시겠습니까?" %>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                          <%= link_to "삭제", admin_center_user_path(user), 
+                              method: :delete, class: "dropdown-item text-danger",
+                              confirm: "이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다." %>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      <%= paginate @users if respond_to?(:paginate) %>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">사용자가 없습니다</h5>
+        <p class="text-muted">검색 조건을 변경하거나 새 사용자를 생성하세요.</p>
+        <%= link_to "새 사용자 생성", new_admin_center_user_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+.avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAllCheckbox = document.getElementById('selectAll');
+  const selectAllTableCheckbox = document.getElementById('selectAllTable');
+  const userCheckboxes = document.querySelectorAll('.user-checkbox');
+  const bulkActionSelect = document.getElementById('bulkActionSelect');
+  const bulkActionBtn = document.getElementById('bulkActionBtn');
+  const selectedCountSpan = document.getElementById('selectedCount');
+  const bulkActionForm = document.getElementById('bulkActionForm');
+  
+  // 전체 선택 기능
+  [selectAllCheckbox, selectAllTableCheckbox].forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const isChecked = this.checked;
+      userCheckboxes.forEach(cb => cb.checked = isChecked);
+      selectAllCheckbox.checked = isChecked;
+      selectAllTableCheckbox.checked = isChecked;
+      updateBulkActionState();
+    });
+  });
+  
+  // 개별 체크박스 변경
+  userCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      updateSelectAllState();
+      updateBulkActionState();
+    });
+  });
+  
+  // 벌크 액션 선택 변경
+  bulkActionSelect.addEventListener('change', function() {
+    updateBulkActionState();
+  });
+  
+  // 벌크 액션 폼 제출
+  bulkActionForm.addEventListener('submit', function(e) {
+    const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+    const action = bulkActionSelect.value;
+    
+    if (selectedUsers.length === 0) {
+      e.preventDefault();
+      alert('사용자를 선택해주세요.');
+      return;
+    }
+    
+    if (!action) {
+      e.preventDefault();
+      alert('작업을 선택해주세요.');
+      return;
+    }
+    
+    let confirmMessage = '';
+    switch (action) {
+      case 'activate':
+        confirmMessage = `선택한 ${selectedUsers.length}명의 사용자를 활성화하시겠습니까?`;
+        break;
+      case 'deactivate':
+        confirmMessage = `선택한 ${selectedUsers.length}명의 사용자를 비활성화하시겠습니까?`;
+        break;
+      case 'delete':
+        confirmMessage = `선택한 ${selectedUsers.length}명의 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`;
+        break;
+    }
+    
+    if (!confirm(confirmMessage)) {
+      e.preventDefault();
+    }
+  });
+  
+  function updateSelectAllState() {
+    const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+    const totalCount = userCheckboxes.length;
+    
+    selectAllCheckbox.checked = checkedCount === totalCount;
+    selectAllTableCheckbox.checked = checkedCount === totalCount;
+    selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+    selectAllTableCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+  }
+  
+  function updateBulkActionState() {
+    const selectedCount = document.querySelectorAll('.user-checkbox:checked').length;
+    const hasAction = bulkActionSelect.value !== '';
+    
+    selectedCountSpan.textContent = `${selectedCount}개 선택됨`;
+    bulkActionBtn.disabled = selectedCount === 0 || !hasAction;
+  }
+});
+</script>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "병원경영분석시스템" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps %>
+    <%= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <%= link_to "병원경영분석시스템", root_path, class: "navbar-brand" %>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <%= link_to "Dashboard", root_path, class: "nav-link" %>
+            </li>
+            <li class="nav-item">
+              <%= link_to "Data Upload", data_uploads_path, class: "nav-link" %>
+            </li>
+            <li class="nav-item">
+              <%= link_to "Mapping Manager", mapping_manager_index_path, class: "nav-link" %>
+            </li>
+            <li class="nav-item">
+              <%= link_to "Analysis Explorer", analysis_explorer_index_path, class: "nav-link" %>
+            </li>
+            <li class="nav-item">
+              <%= link_to "Report Scheduler", report_scheduler_index_path, class: "nav-link" %>
+            </li>
+            <li class="nav-item">
+              <%= link_to "Admin Center", admin_center_path, class: "nav-link" %>
+            </li>
+            <% if current_user&.admin? %>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  필드 관리
+                </a>
+                <ul class="dropdown-menu">
+                  <li><%= link_to "표준 필드", standard_fields_path, class: "dropdown-item" %></li>
+                  <li><%= link_to "카테고리", categories_path, class: "dropdown-item" %></li>
+                </ul>
+              </li>
+            <% end %>
+          </ul>
+
+          <ul class="navbar-nav">
+            <% if user_signed_in? %>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                  <%= current_user.name %>
+                  <span class="badge bg-secondary ms-1"><%= current_user.role.humanize %></span>
+                </a>
+                <ul class="dropdown-menu">
+                  <li><%= link_to "프로필 수정", edit_user_registration_path, class: "dropdown-item" %></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <span class="dropdown-item-text">
+                      <small class="text-muted">
+                        <%= current_hospital.name %><br>
+                        <%= current_user.department %>
+                      </small>
+                    </span>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><%= link_to "로그아웃", destroy_user_session_path, method: :delete, class: "dropdown-item" %></li>
+                </ul>
+              </li>
+            <% else %>
+              <li class="nav-item">
+                <%= link_to "로그인", new_user_session_path, class: "nav-link" %>
+              </li>
+              <li class="nav-item">
+                <%= link_to "회원가입", new_user_registration_path, class: "nav-link" %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Flash messages -->
+    <% if notice %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= notice %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% end %>
+
+    <% if alert %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= alert %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% end %>
+
+    <!-- Main content -->
+    <main class="container-fluid mt-4">
+      <%= yield %>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-lg-start mt-5">
+      <div class="text-center p-3">
+        © 2025 병원경영분석시스템. All rights reserved.
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,607 @@
+<% content_for :title, "필드 매핑 - #{@data_upload.file_name}" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "매핑 관리", mapping_manager_index_path %></li>
+        <li class="breadcrumb-item active" aria-current="page"><%= @data_upload.file_name %></li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1">필드 매핑</h1>
+    <p class="text-muted mb-0">원본 필드를 표준 필드에 드래그앤드롭하여 매핑하세요</p>
+  </div>
+  <div>
+    <button type="button" id="previewBtn" class="btn btn-outline-info me-2">
+      <i class="fas fa-eye me-2"></i>미리보기
+    </button>
+    <button type="button" id="saveBtn" class="btn btn-success">
+      <i class="fas fa-save me-2"></i>매핑 저장
+    </button>
+  </div>
+</div>
+
+<!-- File Information -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <h6>파일 정보</h6>
+        <dl class="row small">
+          <dt class="col-sm-4">파일명:</dt>
+          <dd class="col-sm-8"><%= @data_upload.file_name %></dd>
+          <dt class="col-sm-4">카테고리:</dt>
+          <dd class="col-sm-8">
+            <% if @data_upload.data_category.present? %>
+              <span class="badge bg-info"><%= @data_upload.data_category.humanize %></span>
+            <% else %>
+              <span class="text-muted">미분류</span>
+            <% end %>
+          </dd>
+          <dt class="col-sm-4">총 행 수:</dt>
+          <dd class="col-sm-8"><%= number_with_delimiter(@data_upload.total_rows || 0) %></dd>
+        </dl>
+      </div>
+      <div class="col-md-6">
+        <h6>매핑 진행상황</h6>
+        <div class="progress mb-2">
+          <% mapped_count = @existing_mappings.count %>
+          <% total_count = @source_fields.count %>
+          <% progress = total_count > 0 ? (mapped_count.to_f / total_count * 100).round(1) : 0 %>
+          <div class="progress-bar" role="progressbar" style="width: <%= progress %>%">
+            <%= progress %>%
+          </div>
+        </div>
+        <small class="text-muted">
+          <%= mapped_count %>개 / <%= total_count %>개 필드 매핑됨
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mapping Interface -->
+<div class="row">
+  <!-- Source Fields -->
+  <div class="col-lg-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-file-alt me-2"></i>원본 필드
+          <span class="badge bg-secondary ms-2"><%= @source_fields.count %></span>
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="sourceFields" class="field-container">
+          <% @source_fields.each_with_index do |field, index| %>
+            <div class="field-item source-field"
+                 data-field-name="<%= field[:name] %>"
+                 data-field-type="<%= field[:type] %>"
+                 data-field-index="<%= index %>"
+                 draggable="true">
+              <div class="field-header">
+                <span class="field-name"><%= field[:name] %></span>
+                <span class="field-type badge bg-secondary"><%= field[:type] %></span>
+              </div>
+              <% if field[:sample_values].present? %>
+                <div class="field-samples">
+                  <small class="text-muted">
+                    예시: <%= field[:sample_values].join(', ') %>
+                  </small>
+                </div>
+              <% end %>
+              <% if @existing_mappings[field[:name]].present? %>
+                <div class="field-mapping">
+                  <small class="text-success">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    <%= @existing_mappings[field[:name]][:target_field] %>
+                  </small>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Target Fields -->
+  <div class="col-lg-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">
+          <i class="fas fa-bullseye me-2"></i>표준 필드
+          <span class="badge bg-light text-dark ms-2"><%= @target_fields.count %></span>
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="targetFields" class="field-container">
+          <% @target_fields.each do |field| %>
+            <div class="field-item target-field"
+                 data-field-name="<%= field[:name] %>"
+                 data-field-type="<%= field[:type] %>"
+                 data-required="<%= field[:required] %>">
+              <div class="field-header">
+                <span class="field-name">
+                  <%= field[:label] %>
+                  <% if field[:required] %>
+                    <span class="text-danger">*</span>
+                  <% end %>
+                </span>
+                <span class="field-type badge bg-primary"><%= field[:type] %></span>
+              </div>
+              <div class="field-description">
+                <small class="text-muted"><%= field[:description] %></small>
+              </div>
+              <div class="drop-zone" data-target-field="<%= field[:name] %>">
+                <span class="drop-text">여기에 드롭하세요</span>
+              </div>
+              <div class="mapped-field" style="display: none;">
+                <div class="mapped-info">
+                  <span class="mapped-source"></span>
+                  <button type="button" class="btn btn-sm btn-outline-danger remove-mapping">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="mapping-options mt-2">
+                  <select class="form-select form-select-sm mapping-type">
+                    <option value="direct">직접 매핑</option>
+                    <option value="calculated">계산</option>
+                    <option value="lookup">룩업</option>
+                    <option value="conditional">조건부</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="previewModalLabel">
+          <i class="fas fa-eye me-2"></i>매핑 미리보기
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="previewContent">
+          <div class="text-center py-4">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">로딩 중...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.field-container {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.field-item {
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.field-item:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.source-field {
+  cursor: grab;
+  border-left: 4px solid #6c757d;
+  position: relative;
+}
+
+.source-field::before {
+  content: "⋮⋮";
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  color: #6c757d;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.source-field:hover {
+  border-left-color: #0d6efd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.source-field:active {
+  cursor: grabbing;
+}
+
+.source-field.dragging {
+  opacity: 0.6;
+  transform: rotate(3deg) scale(0.95);
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.target-field {
+  border-left: 4px solid #0d6efd;
+  position: relative;
+}
+
+.target-field.required {
+  border-left-color: #dc3545;
+}
+
+.field-header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.field-name {
+  font-weight: 500;
+  flex-grow: 1;
+}
+
+.field-type {
+  font-size: 0.75rem;
+}
+
+.field-samples, .field-description {
+  margin-bottom: 0.5rem;
+}
+
+.drop-zone {
+  border: 2px dashed #dee2e6;
+  border-radius: 0.375rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.drop-zone:hover {
+  border-color: #6c757d;
+  background: #e9ecef;
+}
+
+.drop-zone.drag-over {
+  border-color: #0d6efd !important;
+  background: #e7f3ff !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+  border-style: solid !important;
+}
+
+.drop-text {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.mapped-field {
+  border: 2px solid #198754;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  background: #d1e7dd;
+}
+
+.mapped-info {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+}
+
+.mapped-source {
+  font-weight: 500;
+  color: #198754;
+  flex-grow: 1;
+}
+
+.remove-mapping {
+  margin-left: 0.5rem;
+}
+
+.mapping-options {
+  margin-top: 0.5rem;
+}
+
+.field-mapping {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: #d1e7dd;
+  border-radius: 0.25rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const sourceFields = document.querySelectorAll('.source-field');
+  const targetFields = document.querySelectorAll('.target-field');
+  const saveBtn = document.getElementById('saveBtn');
+  const previewBtn = document.getElementById('previewBtn');
+
+  let currentMappings = {};
+
+  // 기존 매핑 로드
+  <% @existing_mappings.each do |source_field, mapping| %>
+    currentMappings['<%= mapping[:target_field] %>'] = {
+      sourceField: '<%= source_field %>',
+      mappingType: '<%= mapping[:mapping_type] %>',
+      isRequired: <%= mapping[:is_required] %>,
+      isActive: <%= mapping[:is_active] %>
+    };
+  <% end %>
+
+  // 기존 매핑 표시
+  Object.keys(currentMappings).forEach(targetField => {
+    const mapping = currentMappings[targetField];
+    const targetElement = document.querySelector(`[data-field-name="${targetField}"]`);
+    if (targetElement) {
+      showMapping(targetElement, mapping.sourceField, mapping.mappingType);
+    }
+  });
+
+  // 드래그 이벤트 설정
+  sourceFields.forEach(field => {
+    field.addEventListener('dragstart', handleDragStart);
+    field.addEventListener('dragend', handleDragEnd);
+  });
+
+  targetFields.forEach(field => {
+    const dropZone = field.querySelector('.drop-zone');
+    if (dropZone) {
+      dropZone.addEventListener('dragover', handleDragOver);
+      dropZone.addEventListener('dragenter', handleDragEnter);
+      dropZone.addEventListener('dragleave', handleDragLeave);
+      dropZone.addEventListener('drop', handleDrop);
+    }
+
+    const removeBtn = field.querySelector('.remove-mapping');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => removeMapping(field));
+    }
+  });
+
+  function handleDragStart(e) {
+    console.log('Drag start:', e.target.dataset.fieldName);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', e.target.dataset.fieldName);
+    e.dataTransfer.setData('field-type', e.target.dataset.fieldType);
+    e.target.classList.add('dragging');
+
+    // 모든 드롭 존에 시각적 힌트 추가
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+      zone.style.borderStyle = 'solid';
+      zone.style.borderColor = '#6c757d';
+    });
+  }
+
+  function handleDragEnd(e) {
+    console.log('Drag end');
+    e.target.classList.remove('dragging');
+
+    // 모든 드롭 존의 시각적 힌트 제거
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+      zone.style.borderStyle = 'dashed';
+      zone.style.borderColor = '#dee2e6';
+      zone.classList.remove('drag-over');
+    });
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  function handleDragEnter(e) {
+    e.preventDefault();
+    console.log('Drag enter:', e.target);
+    e.target.classList.add('drag-over');
+  }
+
+  function handleDragLeave(e) {
+    console.log('Drag leave:', e.target);
+    // relatedTarget이 자식 요소가 아닌 경우에만 클래스 제거
+    if (!e.target.contains(e.relatedTarget)) {
+      e.target.classList.remove('drag-over');
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    console.log('Drop event:', e.target);
+    e.target.classList.remove('drag-over');
+
+    const sourceFieldName = e.dataTransfer.getData('text/plain');
+    const sourceFieldType = e.dataTransfer.getData('field-type');
+    const targetField = e.target.closest('.target-field');
+
+    if (!targetField) {
+      console.error('Target field not found');
+      return;
+    }
+
+    const targetFieldName = targetField.dataset.fieldName;
+    console.log('Mapping:', sourceFieldName, '->', targetFieldName);
+
+    // 기존 매핑 제거
+    removeExistingMapping(targetFieldName);
+
+    // 새 매핑 추가
+    currentMappings[targetFieldName] = {
+      sourceField: sourceFieldName,
+      mappingType: 'direct',
+      isRequired: targetField.dataset.required === 'true',
+      isActive: true
+    };
+
+    showMapping(targetField, sourceFieldName, 'direct');
+
+    // 성공 피드백
+    const dropZone = e.target;
+    dropZone.style.background = '#d1e7dd';
+    dropZone.style.borderColor = '#198754';
+    setTimeout(() => {
+      dropZone.style.background = '';
+      dropZone.style.borderColor = '';
+    }, 500);
+  }
+
+  function showMapping(targetField, sourceFieldName, mappingType) {
+    const dropZone = targetField.querySelector('.drop-zone');
+    const mappedField = targetField.querySelector('.mapped-field');
+    const mappedSource = targetField.querySelector('.mapped-source');
+    const mappingTypeSelect = targetField.querySelector('.mapping-type');
+
+    dropZone.style.display = 'none';
+    mappedField.style.display = 'block';
+    mappedSource.textContent = sourceFieldName;
+    mappingTypeSelect.value = mappingType;
+
+    // 매핑 타입 변경 이벤트
+    mappingTypeSelect.addEventListener('change', function() {
+      const targetFieldName = targetField.dataset.fieldName;
+      if (currentMappings[targetFieldName]) {
+        currentMappings[targetFieldName].mappingType = this.value;
+      }
+    });
+  }
+
+  function removeMapping(targetField) {
+    const targetFieldName = targetField.dataset.fieldName;
+    const dropZone = targetField.querySelector('.drop-zone');
+    const mappedField = targetField.querySelector('.mapped-field');
+
+    delete currentMappings[targetFieldName];
+
+    dropZone.style.display = 'block';
+    mappedField.style.display = 'none';
+  }
+
+  function removeExistingMapping(targetFieldName) {
+    // 다른 타겟 필드에서 같은 소스 필드를 사용하는 매핑 제거
+    Object.keys(currentMappings).forEach(key => {
+      if (key !== targetFieldName && currentMappings[key].sourceField === currentMappings[targetFieldName]?.sourceField) {
+        const otherTargetField = document.querySelector(`[data-field-name="${key}"]`);
+        if (otherTargetField) {
+          removeMapping(otherTargetField);
+        }
+      }
+    });
+  }
+
+  // 저장 버튼
+  saveBtn.addEventListener('click', function() {
+    const mappingsArray = Object.keys(currentMappings).map(targetField => ({
+      source_field: currentMappings[targetField].sourceField,
+      target_field: targetField,
+      mapping_type: currentMappings[targetField].mappingType,
+      data_type: 'string', // 기본값
+      is_required: currentMappings[targetField].isRequired,
+      is_active: currentMappings[targetField].isActive
+    }));
+
+    if (mappingsArray.length === 0) {
+      alert('매핑할 필드를 선택해주세요.');
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>저장 중...';
+
+    fetch('<%= save_mapping_mapping_manager_path(@data_upload) %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ mappings: mappingsArray })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(`매핑이 저장되었습니다. (생성: ${data.created_count}, 수정: ${data.updated_count})`);
+        window.location.href = '<%= mapping_manager_path(@data_upload) %>';
+      } else {
+        alert('저장 중 오류가 발생했습니다: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Save error:', error);
+      alert('저장 중 오류가 발생했습니다.');
+    })
+    .finally(() => {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>매핑 저장';
+    });
+  });
+
+  // 미리보기 버튼
+  previewBtn.addEventListener('click', function() {
+    if (Object.keys(currentMappings).length === 0) {
+      alert('미리보기할 매핑이 없습니다.');
+      return;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+
+    fetch('<%= preview_mapping_manager_path(@data_upload) %>')
+    .then(response => response.json())
+    .then(data => {
+      showPreview(data);
+    })
+    .catch(error => {
+      console.error('Preview error:', error);
+      document.getElementById('previewContent').innerHTML =
+        '<div class="alert alert-danger">미리보기를 불러올 수 없습니다.</div>';
+    });
+  });
+
+  function showPreview(data) {
+    const content = document.getElementById('previewContent');
+
+    if (data.rows && data.rows.length > 0) {
+      let html = '<div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-light"><tr>';
+
+      data.headers.forEach(header => {
+        html += `<th>${header}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      data.rows.forEach(row => {
+        html += '<tr>';
+        data.headers.forEach(header => {
+          html += `<td>${row[header] || ''}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+      html += `<small class="text-muted">* ${data.mapping_count}개 필드가 매핑되었습니다. 처음 5행만 표시됩니다.</small>`;
+
+      content.innerHTML = html;
+    } else {
+      content.innerHTML = '<div class="alert alert-warning">미리보기 데이터가 없습니다.</div>';
+    }
+  }
+});
+</script>

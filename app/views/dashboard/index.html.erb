@@ -1,0 +1,335 @@
+<% content_for :title, "Dashboard - 병원경영분석시스템" %>
+
+<div class="row mb-4">
+  <div class="col-12">
+    <h1 class="h3 mb-3">병원경영분석 대시보드</h1>
+    <p class="text-muted">주요 성과 지표와 트렌드를 한눈에 확인하세요</p>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+    <div class="card kpi-card">
+      <div class="card-body text-center">
+        <div class="kpi-value"><%= number_to_currency(@kpis[:total_revenue], unit: "₩", precision: 0) %></div>
+        <div class="kpi-label">총 수익</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+    <div class="card kpi-card">
+      <div class="card-body text-center">
+        <div class="kpi-value"><%= @kpis[:upload_success_rate] %>%</div>
+        <div class="kpi-label">업로드 성공률</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+    <div class="card kpi-card">
+      <div class="card-body text-center">
+        <div class="kpi-value"><%= @kpis[:user_activity_rate] %>%</div>
+        <div class="kpi-label">사용자 활동률</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+    <div class="card kpi-card">
+      <div class="card-body text-center">
+        <div class="kpi-value"><%= @kpis[:total_uploads] %></div>
+        <div class="kpi-label">총 업로드</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+    <div class="card kpi-card">
+      <div class="card-body text-center">
+        <div class="kpi-value"><%= @kpis[:total_analyses] %></div>
+        <div class="kpi-label">총 분석</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+    <div class="card kpi-card">
+      <div class="card-body text-center">
+        <div class="kpi-value"><%= @kpis[:total_users] %></div>
+        <div class="kpi-label">활성 사용자</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+  <!-- Revenue Trend Chart -->
+  <div class="col-lg-6 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">월별 수익 추이</h5>
+      </div>
+      <div class="card-body">
+        <%= line_chart @revenue_trend.map { |data| [data[:month], data[:revenue]] },
+            height: "300px",
+            colors: ["#667eea"],
+            suffix: "원",
+            thousands: ",",
+            library: {
+              responsive: true,
+              plugins: {
+                legend: { display: false }
+              }
+            } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Activity Chart -->
+  <div class="col-lg-6 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">최근 7일 사용자 활동</h5>
+      </div>
+      <div class="card-body">
+        <%= column_chart @user_activity.map { |data| [data[:date], data[:active_users]] },
+            height: "300px",
+            colors: ["#28a745"],
+            suffix: "명",
+            library: {
+              responsive: true,
+              plugins: {
+                legend: { display: false }
+              }
+            } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Second Charts Row -->
+<div class="row">
+  <!-- Upload Statistics -->
+  <div class="col-lg-4 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">업로드 현황</h5>
+      </div>
+      <div class="card-body">
+        <% if @upload_statistics[:total] > 0 %>
+          <%= pie_chart @upload_statistics[:by_status],
+              height: "250px",
+              colors: ["#28a745", "#ffc107", "#dc3545", "#6c757d"],
+              library: {
+                responsive: true,
+                plugins: {
+                  legend: { position: 'bottom' }
+                }
+              } %>
+        <% else %>
+          <div class="text-center text-muted py-5">
+            <i class="fas fa-upload fa-3x mb-3"></i>
+            <p>업로드된 데이터가 없습니다</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Performance -->
+  <div class="col-lg-8 mb-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">부서별 성과</h5>
+      </div>
+      <div class="card-body">
+        <% if @department_performance.any? %>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>부서</th>
+                  <th class="text-end">수익</th>
+                  <th class="text-end">환자수</th>
+                  <th class="text-end">사용자수</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @department_performance.each do |dept| %>
+                  <tr>
+                    <td><%= dept[:department] %></td>
+                    <td class="text-end"><%= number_to_currency(dept[:revenue], unit: "₩", precision: 0) %></td>
+                    <td class="text-end"><%= number_with_delimiter(dept[:patients]) %></td>
+                    <td class="text-end"><%= dept[:user_count] %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center text-muted py-3">
+            <p>부서 정보가 없습니다</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mb-4">
+  <!-- Recent Uploads -->
+  <div class="col-lg-6 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">최근 업로드</h5>
+        <%= link_to "전체보기", data_uploads_path, class: "btn btn-sm btn-outline-primary" %>
+      </div>
+      <div class="card-body">
+        <% if @recent_uploads.any? %>
+          <% @recent_uploads.each do |upload| %>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="mb-1"><%= upload.file_name %></h6>
+                <small class="text-muted">
+                  <%= upload.user.name %> • <%= time_ago_in_words(upload.created_at) %> 전
+                </small>
+              </div>
+              <div>
+                <% case upload.status %>
+                <% when 'completed' %>
+                  <span class="badge bg-success">완료</span>
+                <% when 'processing' %>
+                  <span class="badge bg-warning">처리중</span>
+                <% when 'failed' %>
+                  <span class="badge bg-danger">실패</span>
+                <% else %>
+                  <span class="badge bg-secondary">대기</span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-center text-muted py-3">
+            <i class="fas fa-upload fa-2x mb-2"></i>
+            <p>최근 업로드가 없습니다</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Analyses -->
+  <div class="col-lg-6 mb-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">최근 분석</h5>
+        <%= link_to "전체보기", analysis_explorer_index_path, class: "btn btn-sm btn-outline-primary" %>
+      </div>
+      <div class="card-body">
+        <% if @recent_analyses.any? %>
+          <% @recent_analyses.each do |analysis| %>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="mb-1"><%= analysis.analysis_type.humanize %></h6>
+                <small class="text-muted">
+                  <%= analysis.user.name %> • <%= time_ago_in_words(analysis.created_at) %> 전
+                </small>
+              </div>
+              <div>
+                <span class="badge bg-info">분석</span>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="text-center text-muted py-3">
+            <i class="fas fa-chart-line fa-2x mb-2"></i>
+            <p>최근 분석이 없습니다</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0">빠른 작업</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <% if can? :create, DataUpload %>
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+              <%= link_to data_uploads_path, class: "btn btn-outline-primary w-100" do %>
+                <i class="fas fa-upload mb-2"></i><br>
+                데이터 업로드
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if can? :read, FieldMapping %>
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+              <%= link_to mapping_manager_index_path, class: "btn btn-outline-primary w-100" do %>
+                <i class="fas fa-exchange-alt mb-2"></i><br>
+                매핑 관리
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="col-md-2 col-sm-4 col-6 mb-3">
+            <%= link_to analysis_explorer_index_path, class: "btn btn-outline-primary w-100" do %>
+              <i class="fas fa-chart-bar mb-2"></i><br>
+              분석 탐색
+            <% end %>
+          </div>
+
+          <% if can? :create, ReportSchedule %>
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+              <%= link_to report_scheduler_index_path, class: "btn btn-outline-primary w-100" do %>
+                <i class="fas fa-file-alt mb-2"></i><br>
+                리포트 생성
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if can? :read, :admin_center %>
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+              <%= link_to admin_center_path, class: "btn btn-outline-primary w-100" do %>
+                <i class="fas fa-cog mb-2"></i><br>
+                관리센터
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if current_user&.admin? %>
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+              <%= link_to standard_fields_path, class: "btn btn-outline-success w-100" do %>
+                <i class="fas fa-list-alt mb-2"></i><br>
+                표준필드
+              <% end %>
+            </div>
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+              <%= link_to categories_path, class: "btn btn-outline-info w-100" do %>
+                <i class="fas fa-tags mb-2"></i><br>
+                카테고리
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="col-md-2 col-sm-4 col-6 mb-3">
+            <button class="btn btn-outline-secondary w-100" onclick="window.print()">
+              <i class="fas fa-print mb-2"></i><br>
+              인쇄
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

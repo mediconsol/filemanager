@@ -1,0 +1,229 @@
+<% content_for :title, "매핑 상세 - #{@data_upload.file_name}" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><%= link_to "매핑 관리", mapping_manager_index_path %></li>
+        <li class="breadcrumb-item active" aria-current="page"><%= @data_upload.file_name %></li>
+      </ol>
+    </nav>
+    <h1 class="h3 mb-1">매핑 상세</h1>
+    <p class="text-muted mb-0">설정된 필드 매핑을 확인하고 관리하세요</p>
+  </div>
+  <div>
+    <% if can? :update, FieldMapping %>
+      <%= link_to "매핑 수정", edit_mapping_manager_path(@data_upload), class: "btn btn-primary" %>
+    <% end %>
+  </div>
+</div>
+
+<!-- File Information -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">파일 정보</h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <dl class="row">
+          <dt class="col-sm-4">파일명:</dt>
+          <dd class="col-sm-8"><%= @data_upload.file_name %></dd>
+
+          <dt class="col-sm-4">카테고리:</dt>
+          <dd class="col-sm-8">
+            <% if @data_upload.data_category.present? %>
+              <span class="badge bg-info"><%= @data_upload.data_category.humanize %></span>
+            <% else %>
+              <span class="text-muted">미분류</span>
+            <% end %>
+          </dd>
+
+          <dt class="col-sm-4">총 행 수:</dt>
+          <dd class="col-sm-8"><%= number_with_delimiter(@data_upload.total_rows || 0) %></dd>
+        </dl>
+      </div>
+      <div class="col-md-6">
+        <dl class="row">
+          <dt class="col-sm-4">업로더:</dt>
+          <dd class="col-sm-8"><%= @data_upload.user.name %></dd>
+
+          <dt class="col-sm-4">업로드 시간:</dt>
+          <dd class="col-sm-8"><%= @data_upload.created_at.strftime('%Y-%m-%d %H:%M:%S') %></dd>
+
+          <dt class="col-sm-4">매핑 수:</dt>
+          <dd class="col-sm-8">
+            <span class="badge bg-success"><%= @field_mappings.active.count %></span>
+            개 활성 매핑
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mapping Summary -->
+<% if @field_mappings.active.any? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title mb-0">매핑 현황</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>원본 필드</th>
+              <th>표준 필드</th>
+              <th>매핑 유형</th>
+              <th>데이터 타입</th>
+              <th>필수 여부</th>
+              <th>상태</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @field_mappings.active.each do |mapping| %>
+              <tr>
+                <td>
+                  <code><%= mapping.source_field %></code>
+                </td>
+                <td>
+                  <strong><%= mapping.target_field %></strong>
+                </td>
+                <td>
+                  <% case mapping.mapping_type %>
+                  <% when 'direct' %>
+                    <span class="badge bg-primary">직접</span>
+                  <% when 'calculated' %>
+                    <span class="badge bg-warning">계산</span>
+                  <% when 'lookup' %>
+                    <span class="badge bg-info">룩업</span>
+                  <% when 'conditional' %>
+                    <span class="badge bg-secondary">조건부</span>
+                  <% else %>
+                    <span class="badge bg-light text-dark"><%= mapping.mapping_type %></span>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge bg-outline-secondary"><%= mapping.data_type %></span>
+                </td>
+                <td>
+                  <% if mapping.is_required %>
+                    <span class="text-danger"><i class="fas fa-asterisk"></i> 필수</span>
+                  <% else %>
+                    <span class="text-muted">선택</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if mapping.is_active %>
+                    <span class="badge bg-success">활성</span>
+                  <% else %>
+                    <span class="badge bg-secondary">비활성</span>
+                  <% end %>
+                </td>
+                <td>
+                  <% if mapping.description.present? %>
+                    <small class="text-muted"><%= mapping.description %></small>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Preview -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">매핑된 데이터 미리보기</h5>
+      <button type="button" id="refreshPreview" class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-sync-alt me-1"></i>새로고침
+      </button>
+    </div>
+    <div class="card-body">
+      <div id="previewContainer">
+        <div class="text-center py-4">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">로딩 중...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshPreview');
+    const previewContainer = document.getElementById('previewContainer');
+
+    function loadPreview() {
+      previewContainer.innerHTML = `
+        <div class="text-center py-4">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">로딩 중...</span>
+          </div>
+        </div>
+      `;
+
+      fetch('<%= preview_mapping_manager_path(@data_upload) %>')
+      .then(response => response.json())
+      .then(data => {
+        showPreview(data);
+      })
+      .catch(error => {
+        console.error('Preview error:', error);
+        previewContainer.innerHTML =
+          '<div class="alert alert-danger">미리보기를 불러올 수 없습니다.</div>';
+      });
+    }
+
+    function showPreview(data) {
+      if (data.rows && data.rows.length > 0) {
+        let html = '<div class="table-responsive"><table class="table table-sm table-bordered"><thead class="table-light"><tr>';
+
+        data.headers.forEach(header => {
+          html += `<th>${header}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        data.rows.forEach(row => {
+          html += '<tr>';
+          data.headers.forEach(header => {
+            html += `<td>${row[header] || ''}</td>`;
+          });
+          html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        html += `<small class="text-muted">* ${data.mapping_count}개 필드가 매핑되었습니다. 처음 5행만 표시됩니다.</small>`;
+
+        previewContainer.innerHTML = html;
+      } else {
+        previewContainer.innerHTML = '<div class="alert alert-warning">미리보기 데이터가 없습니다.</div>';
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadPreview);
+
+    // 초기 로드
+    loadPreview();
+  });
+  </script>
+
+<% else %>
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+      <h5 class="text-muted">설정된 매핑이 없습니다</h5>
+      <p class="text-muted">필드 매핑을 설정하여 데이터 분석을 시작하세요.</p>
+      <% if can? :update, FieldMapping %>
+        <%= link_to "매핑 설정", edit_mapping_manager_path(@data_upload), class: "btn btn-primary" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

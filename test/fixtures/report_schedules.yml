@@ -1,0 +1,27 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  hospital: one
+  user: one
+  name: MyString
+  description: MyText
+  report_type: MyString
+  schedule_type: MyString
+  schedule_config: MyText
+  recipients: MyText
+  last_run_at: 2025-07-04 20:47:53
+  next_run_at: 2025-07-04 20:47:53
+  is_active: false
+
+two:
+  hospital: two
+  user: two
+  name: MyString
+  description: MyText
+  report_type: MyString
+  schedule_type: MyString
+  schedule_config: MyText
+  recipients: MyText
+  last_run_at: 2025-07-04 20:47:53
+  next_run_at: 2025-07-04 20:47:53
+  is_active: false
