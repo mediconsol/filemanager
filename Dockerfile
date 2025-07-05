@@ -45,8 +45,8 @@ COPY . .
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
-# Skip assets precompile during build - will be done at runtime
-# RUN SECRET_KEY_BASE=dummy RAILS_ENV=production bundle exec rails assets:precompile
+# Precompile assets for production
+RUN SECRET_KEY_BASE=dummy RAILS_ENV=production bundle exec rails assets:precompile
 
 
 
