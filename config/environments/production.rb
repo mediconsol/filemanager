@@ -24,8 +24,11 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Allow all hosts in production (Heroku requirement)
+  # Allow all hosts in production (Railway requirement)
   config.hosts.clear
+
+  # Disable asset compilation during build if SECRET_KEY_BASE is not available
+  config.assets.initialize_on_precompile = false
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true
