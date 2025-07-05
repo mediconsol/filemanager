@@ -27,8 +27,13 @@ Rails.application.configure do
   # Allow all hosts in production (Railway requirement)
   config.hosts.clear
 
-  # Disable asset compilation during build if SECRET_KEY_BASE is not available
+  # Assets configuration for production - compile at runtime for Railway
+  config.assets.compile = true
+  config.assets.digest = true
   config.assets.initialize_on_precompile = false
+
+  # Skip secret key base requirement during assets precompile
+  config.require_master_key = false
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
   config.assume_ssl = true

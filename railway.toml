@@ -2,7 +2,7 @@
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "bundle exec rails db:migrate && bundle exec puma -C config/puma.rb"
+startCommand = "bundle exec rails db:create db:migrate && bundle exec puma -C config/puma.rb"
 healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
