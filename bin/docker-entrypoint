@@ -8,7 +8,15 @@ fi
 
 # If running the rails server then create or migrate existing database
 if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
-  echo "Preparing database..."
+  echo "Waiting for database to be ready..."
+
+  # Wait for database to be available
+  until ./bin/rails runner "ActiveRecord::Base.connection.execute('SELECT 1')" 2>/dev/null; do
+    echo "Database not ready, waiting 2 seconds..."
+    sleep 2
+  done
+
+  echo "Database is ready. Preparing database..."
   ./bin/rails db:prepare
   echo "Database preparation completed."
 fi

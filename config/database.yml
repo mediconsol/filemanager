@@ -81,3 +81,10 @@ test:
 production:
   <<: *default
   url: <%= ENV["DATABASE_URL"] %>
+  # Force TCP connection for Railway
+  host: <%= ENV["PGHOST"] %>
+  port: <%= ENV["PGPORT"] || 5432 %>
+  database: <%= ENV["PGDATABASE"] %>
+  username: <%= ENV["PGUSER"] %>
+  password: <%= ENV["PGPASSWORD"] %>
+  sslmode: require
