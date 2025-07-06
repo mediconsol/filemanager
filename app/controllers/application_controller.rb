@@ -12,7 +12,28 @@ class ApplicationController < ActionController::Base
 
   # Welcome page for testing (now main page)
   def welcome
-    render plain: "🏥 Hospital Management System\n\n✅ Rails #{Rails.version}\n✅ Ruby #{RUBY_VERSION}\n✅ Environment: #{Rails.env}\n✅ Time: #{Time.current}\n\n🔗 Links:\n- Login: /users/sign_in\n- Dashboard: /dashboard"
+    page_info = case request.path
+    when '/users/sign_in'
+      "📝 Login Page"
+    when '/users/sign_up'
+      "📝 Sign Up Page"
+    when '/dashboard'
+      "📊 Dashboard Page"
+    when '/data_upload'
+      "📁 Data Upload Page"
+    when '/analysis'
+      "📈 Analysis Page"
+    when '/reports'
+      "📋 Reports Page"
+    when '/admin'
+      "⚙️ Admin Page"
+    when '/settings'
+      "🔧 Settings Page"
+    else
+      "🏠 Main Page"
+    end
+
+    render plain: "🏥 Hospital Management System\n\n#{page_info}\n\n✅ Rails #{Rails.version}\n✅ Ruby #{RUBY_VERSION}\n✅ Environment: #{Rails.env}\n✅ Time: #{Time.current}\n✅ Current URL: #{request.path}\n\n🔗 Available URLs:\n- Main: /\n- Login: /users/sign_in\n- Sign Up: /users/sign_up\n- Dashboard: /dashboard\n- Data Upload: /data_upload\n- Analysis: /analysis\n- Reports: /reports\n- Admin: /admin\n- Settings: /settings"
   end
 
   # Override Devise redirect paths

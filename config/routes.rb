@@ -14,7 +14,15 @@ Rails.application.routes.draw do
       post :retry_job
     end
   end
-  devise_for :users
+  # Temporarily disable devise routes to prevent redirects
+  # devise_for :users
+
+  # Manual devise routes for testing
+  get '/users/sign_in', to: 'application#welcome'
+  get '/users/sign_up', to: 'application#welcome'
+  post '/users/sign_in', to: 'application#welcome'
+  post '/users', to: 'application#welcome'
+
   # Root route - use safe welcome page temporarily
   root "application#welcome"
 
@@ -27,21 +35,30 @@ Rails.application.routes.draw do
   # Home routes
   resources :home, only: [:index]
 
-  # Main application routes
+  # Main application routes - all accessible without authentication
   resources :dashboard, only: [:index]
+  get '/dashboard', to: 'dashboard#index'  # Explicit route
 
-  resources :data_uploads do
-    member do
-      post :process_data
-      get :progress
-    end
-  end
+  # Additional menu routes
+  get '/data_upload', to: 'application#welcome'
+  get '/analysis', to: 'application#welcome'
+  get '/reports', to: 'application#welcome'
+  get '/admin', to: 'application#welcome'
+  get '/settings', to: 'application#welcome'
 
-  resources :mapping_manager, path: 'mapping' do
-    member do
-      post :save_mapping
-      get :preview
-    end
+  # Temporarily disable complex routes to prevent errors
+  # resources :data_uploads do
+  #   member do
+  #     post :process_data
+  #     get :progress
+  #   end
+  # end
+
+  # resources :mapping_manager, path: 'mapping' do
+  #   member do
+  #     post :save_mapping
+  #     get :preview
+  #   end
   end
 
   resources :analysis_explorer, path: 'analysis' do
