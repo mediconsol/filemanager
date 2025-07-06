@@ -1,18 +1,24 @@
 class ApplicationController < ActionController::Base
-  # Temporarily disable browser restrictions for debugging
-  # allow_browser versions: :modern
+  # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
+  allow_browser versions: :modern
 
-  # Temporarily disable all authentication for debugging
-  # before_action :authenticate_user!, except: [:welcome]
-  # before_action :configure_permitted_parameters, if: :devise_controller?
+  # Devise authentication (welcome action bypassed)
+  before_action :authenticate_user!, except: [:welcome]
+  before_action :configure_permitted_parameters, if: :devise_controller?
 
-  # Temporarily disable authorization for debugging
+  # Temporarily disable CanCanCan authorization for debugging
   # include CanCan::ControllerAdditions
   # check_authorization unless: :devise_controller?, except: [:welcome]
 
   # Welcome page for testing
   def welcome
-    render plain: "🏥 Hospital Management System is working!\n\nRails #{Rails.version}\nRuby #{RUBY_VERSION}\nEnvironment: #{Rails.env}\nTime: #{Time.current}"
+    user_info = if user_signed_in?
+      "\nLogged in as: #{current_user.email}"
+    else
+      "\nNot logged in"
+    end
+
+    render plain: "🏥 Hospital Management System is working!\n\nRails #{Rails.version}\nRuby #{RUBY_VERSION}\nEnvironment: #{Rails.env}\nTime: #{Time.current}#{user_info}"
   end
 
   # 권한 오류 처리
