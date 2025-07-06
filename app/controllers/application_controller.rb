@@ -2,13 +2,18 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  # Devise 인증 필요
-  before_action :authenticate_user!
+  # Devise 인증 필요 (welcome 액션 제외)
+  before_action :authenticate_user!, except: [:welcome]
   before_action :configure_permitted_parameters, if: :devise_controller?
 
-  # CanCanCan 권한 체크
+  # CanCanCan 권한 체크 (welcome 액션 제외)
   include CanCan::ControllerAdditions
-  check_authorization unless: :devise_controller?
+  check_authorization unless: :devise_controller?, except: [:welcome]
+
+  # Welcome page for testing
+  def welcome
+    render plain: "🏥 Hospital Management System is working!\n\nRails #{Rails.version}\nRuby #{RUBY_VERSION}\nEnvironment: #{Rails.env}\nTime: #{Time.current}"
+  end
 
   # 권한 오류 처리
   rescue_from CanCan::AccessDenied do |exception|
