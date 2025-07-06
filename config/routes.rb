@@ -15,12 +15,14 @@ Rails.application.routes.draw do
     end
   end
   devise_for :users
-  # Root route - use safe application controller method
-  root "application#welcome"
+  # Root route - main landing page
+  root "index#show"
 
   # Backup routes
-  get '/home', to: 'home#index'
   get '/welcome', to: 'application#welcome'
+
+  # Index routes
+  resources :index, only: [:show]
 
   # Home routes
   resources :home, only: [:index]
