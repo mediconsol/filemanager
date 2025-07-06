@@ -23,8 +23,8 @@ Rails.application.routes.draw do
   post '/users/sign_in', to: 'application#welcome'
   post '/users', to: 'application#welcome'
 
-  # Root route - use safe welcome page temporarily
-  root "application#welcome"
+  # Root route - main index page
+  root "index#show"
 
   # Backup routes
   get '/welcome', to: 'application#welcome'

@@ -1,19 +1,34 @@
 class DashboardController < ApplicationController
-  # 대시보드 페이지는 누구나 접근 가능, 데이터는 로그인 시에만 표시
+  # 대시보드 페이지는 누구나 접근 가능
 
   def index
-    # 로그인 상태에 따라 다른 내용 표시
-    if user_signed_in?
-      # 로그인된 사용자: 실제 대시보드 데이터
-      @user_data = {
-        name: current_user.email,
-        login_time: Time.current,
-        role: current_user.role rescue 'user'
-      }
-    else
-      # 비로그인 사용자: 샘플 데이터 또는 로그인 유도
-      @user_data = nil
-    end
+    # 샘플 KPI 데이터
+    @kpis = {
+      total_revenue: 1_250_000_000,
+      patient_satisfaction: 92.5,
+      bed_occupancy: 85.3,
+      average_los: 4.2,
+      total_patients: 1_234,
+      staff_count: 156
+    }
+
+    # 월별 수익 트렌드 (샘플 데이터)
+    @revenue_trend = [
+      { month: "1월", revenue: 980_000_000 },
+      { month: "2월", revenue: 1_050_000_000 },
+      { month: "3월", revenue: 1_120_000_000 },
+      { month: "4월", revenue: 1_180_000_000 },
+      { month: "5월", revenue: 1_200_000_000 },
+      { month: "6월", revenue: 1_250_000_000 }
+    ]
+
+    # 부서별 성과 (샘플 데이터)
+    @department_performance = [
+      { name: "내과", patients: 450, revenue: 380_000_000, satisfaction: 94.2 },
+      { name: "외과", patients: 320, revenue: 420_000_000, satisfaction: 91.8 },
+      { name: "소아과", patients: 280, revenue: 250_000_000, satisfaction: 96.1 },
+      { name: "응급실", patients: 184, revenue: 200_000_000, satisfaction: 88.5 }
+    ]
   end
 
   private
