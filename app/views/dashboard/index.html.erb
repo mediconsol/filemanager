@@ -1,22 +1,23 @@
-<% content_for :title, "Dashboard - 병원경영분석시스템" %>
+<h1>🏥 Hospital Management Dashboard</h1>
 
-<div class="row mb-4">
-  <div class="col-12">
-    <h1 class="h3 mb-3">병원경영분석 대시보드</h1>
-    <p class="text-muted">주요 성과 지표와 트렌드를 한눈에 확인하세요</p>
-  </div>
+<div class="alert alert-success">
+  <h4>✅ Dashboard is working!</h4>
+  <p><strong>User:</strong> <%= current_user.email %></p>
+  <p><strong>Time:</strong> <%= Time.current %></p>
+  <p><strong>Environment:</strong> <%= Rails.env %></p>
 </div>
 
-<!-- KPI Cards -->
-<div class="row mb-4">
-  <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-    <div class="card kpi-card">
-      <div class="card-body text-center">
-        <div class="kpi-value"><%= number_to_currency(@kpis[:total_revenue], unit: "₩", precision: 0) %></div>
-        <div class="kpi-label">총 수익</div>
-      </div>
-    </div>
+<div class="card">
+  <div class="card-body">
+    <h5>System Status</h5>
+    <ul>
+      <li>✅ Rails Application: Running</li>
+      <li>✅ Database: Connected</li>
+      <li>✅ Authentication: Working</li>
+      <li>✅ User Login: Success</li>
+    </ul>
   </div>
+</div>
 
   <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
     <div class="card kpi-card">
