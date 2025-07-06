@@ -10,15 +10,19 @@ class ApplicationController < ActionController::Base
   # include CanCan::ControllerAdditions
   # check_authorization unless: :devise_controller?, except: [:welcome]
 
-  # Welcome page for testing (backup)
+  # Welcome page for testing (now main page)
   def welcome
-    user_info = if user_signed_in?
-      "\nLogged in as: #{current_user.email}"
-    else
-      "\nNot logged in"
-    end
+    begin
+      user_info = if user_signed_in?
+        "\n✅ Logged in as: #{current_user.email}"
+      else
+        "\n❌ Not logged in"
+      end
 
-    render plain: "🏥 Hospital Management System is working!\n\nRails #{Rails.version}\nRuby #{RUBY_VERSION}\nEnvironment: #{Rails.env}\nTime: #{Time.current}#{user_info}"
+      render plain: "🏥 Hospital Management System\n\n✅ Rails #{Rails.version}\n✅ Ruby #{RUBY_VERSION}\n✅ Environment: #{Rails.env}\n✅ Time: #{Time.current}#{user_info}\n\n🔗 Links:\n- Login: /users/sign_in\n- Dashboard: /dashboard"
+    rescue => e
+      render plain: "🚨 Error: #{e.message}\n\nBasic system info:\nRails: #{Rails.version}\nTime: #{Time.current}"
+    end
   end
 
   # Override Devise redirect paths

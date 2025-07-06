@@ -15,10 +15,11 @@ Rails.application.routes.draw do
     end
   end
   devise_for :users
-  # Root route - home page (works for both logged in and logged out users)
-  root "home#index"
+  # Root route - use safe application controller method
+  root "application#welcome"
 
-  # Backup route in case home fails
+  # Backup routes
+  get '/home', to: 'home#index'
   get '/welcome', to: 'application#welcome'
 
   # Home routes
