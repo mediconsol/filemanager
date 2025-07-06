@@ -1,4 +1,7 @@
 class DashboardController < ApplicationController
+  # 대시보드는 로그인 필요
+  before_action :authenticate_user!
+
   def index
     # 뷰 파일을 사용한 단순화된 대시보드
     # 변수 없이 뷰 파일만 렌더링
