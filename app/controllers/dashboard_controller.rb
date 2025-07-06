@@ -1,10 +1,19 @@
 class DashboardController < ApplicationController
-  # 대시보드는 로그인 필요
-  before_action :authenticate_user!
+  # 대시보드 페이지는 누구나 접근 가능, 데이터는 로그인 시에만 표시
 
   def index
-    # 뷰 파일을 사용한 단순화된 대시보드
-    # 변수 없이 뷰 파일만 렌더링
+    # 로그인 상태에 따라 다른 내용 표시
+    if user_signed_in?
+      # 로그인된 사용자: 실제 대시보드 데이터
+      @user_data = {
+        name: current_user.email,
+        login_time: Time.current,
+        role: current_user.role rescue 'user'
+      }
+    else
+      # 비로그인 사용자: 샘플 데이터 또는 로그인 유도
+      @user_data = nil
+    end
   end
 
   private

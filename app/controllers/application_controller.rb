@@ -2,8 +2,8 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  # Devise authentication - disabled globally, enable per controller as needed
-  # before_action :authenticate_user!
+  # No global authentication - all pages accessible
+  # Individual controllers can require authentication for specific actions
   before_action :configure_permitted_parameters, if: :devise_controller?
 
   # Temporarily disable CanCanCan authorization for debugging
