@@ -5,7 +5,7 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable, :trackable
 
   # Associations
-  belongs_to :hospital
+  belongs_to :hospital, optional: true
   has_many :data_uploads, dependent: :destroy
   has_many :analysis_results, dependent: :destroy
   has_many :report_schedules, dependent: :destroy
@@ -14,7 +14,7 @@ class User < ApplicationRecord
   # Validations
   validates :name, presence: true, length: { minimum: 2, maximum: 100 }
   validates :role, presence: true, inclusion: { in: %w[admin analyst viewer] }
-  validates :email, uniqueness: { scope: :hospital_id }
+  validates :email, uniqueness: true
   validates :phone, format: { with: /\A[\d\-\+\(\)\s]+\z/, message: "올바른 전화번호 형식이 아닙니다" }, allow_blank: true
 
   # Scopes
