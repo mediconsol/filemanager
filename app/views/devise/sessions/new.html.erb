@@ -87,4 +87,9 @@
     });
   }, false);
 })();
+
+// Check if user is already logged in and redirect
+if (window.location.pathname === '/users/sign_in' && document.body.innerHTML.includes('환영합니다')) {
+  window.location.href = '/';
+}
 </script>
