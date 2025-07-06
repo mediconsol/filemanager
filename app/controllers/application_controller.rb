@@ -23,13 +23,13 @@ class ApplicationController < ActionController::Base
 
   # Override Devise redirect paths
   def after_sign_in_path_for(resource)
-    Rails.logger.info "=== AFTER SIGN IN: Redirecting to root ==="
-    root_path  # Redirect to welcome page after login (safer)
+    Rails.logger.info "=== AFTER SIGN IN: Redirecting to home ==="
+    root_path  # Redirect to home page after login
   end
 
   def after_sign_up_path_for(resource)
-    Rails.logger.info "=== AFTER SIGN UP: Redirecting to root ==="
-    root_path  # Redirect to welcome page after signup (safer)
+    Rails.logger.info "=== AFTER SIGN UP: Redirecting to home ==="
+    root_path  # Redirect to home page after signup
   end
 
   # 권한 오류 처리

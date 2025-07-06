@@ -15,10 +15,11 @@ Rails.application.routes.draw do
     end
   end
   devise_for :users
-  # Root route - simple welcome page
-  root "application#welcome"
+  # Root route - home page (works for both logged in and logged out users)
+  root "home#index"
 
-
+  # Home routes
+  resources :home, only: [:index]
 
   # Main application routes
   resources :dashboard, only: [:index]
