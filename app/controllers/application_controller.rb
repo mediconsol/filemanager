@@ -21,6 +21,15 @@ class ApplicationController < ActionController::Base
     render plain: "🏥 Hospital Management System is working!\n\nRails #{Rails.version}\nRuby #{RUBY_VERSION}\nEnvironment: #{Rails.env}\nTime: #{Time.current}#{user_info}"
   end
 
+  # Override Devise redirect paths
+  def after_sign_in_path_for(resource)
+    root_path  # Redirect to welcome page instead of dashboard
+  end
+
+  def after_sign_up_path_for(resource)
+    root_path  # Redirect to welcome page instead of dashboard
+  end
+
   # 권한 오류 처리
   rescue_from CanCan::AccessDenied do |exception|
     respond_to do |format|
