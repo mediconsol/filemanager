@@ -23,11 +23,11 @@ class ApplicationController < ActionController::Base
 
   # Override Devise redirect paths
   def after_sign_in_path_for(resource)
-    root_path  # Redirect to welcome page instead of dashboard
+    dashboard_index_path  # Redirect to dashboard after login
   end
 
   def after_sign_up_path_for(resource)
-    root_path  # Redirect to welcome page instead of dashboard
+    dashboard_index_path  # Redirect to dashboard after signup
   end
 
   # 권한 오류 처리

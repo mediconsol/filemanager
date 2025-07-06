@@ -1,6 +1,25 @@
 class DashboardController < ApplicationController
   def index
-    render plain: "Hospital Management System - Dashboard is working! 🏥"
+    # 임시로 간단한 대시보드 표시 (hospital 없이)
+
+    @kpis = {
+      total_revenue: 1_250_000_000,
+      patient_satisfaction: 92.5,
+      bed_occupancy: 85.3,
+      average_los: 4.2,
+      upload_success_rate: 95.0,
+      user_activity_rate: 78.5,
+      total_uploads: 0,
+      total_analyses: 0,
+      total_users: User.count
+    }
+
+    @revenue_trend = []
+    @department_performance = []
+    @upload_statistics = { by_status: {}, by_category: {}, total: 0 }
+    @user_activity = []
+    @recent_uploads = []
+    @recent_analyses = []
   end
 
   private
