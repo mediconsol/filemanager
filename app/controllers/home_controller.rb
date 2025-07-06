@@ -3,7 +3,9 @@ class HomeController < ApplicationController
   skip_before_action :authenticate_user!, only: [:index]
 
   def index
-    # 로그인 상태에 따라 다른 내용 표시
-    # 뷰에서 user_signed_in? 헬퍼로 분기 처리
+    # 완전히 단순화된 홈페이지
+    render plain: "🏥 Hospital Management System\n\n" +
+                  (user_signed_in? ? "환영합니다, #{current_user.email}님!" : "로그인이 필요합니다.") +
+                  "\n\nTime: #{Time.current}"
   end
 end

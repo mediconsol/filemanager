@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
   # include CanCan::ControllerAdditions
   # check_authorization unless: :devise_controller?, except: [:welcome]
 
-  # Welcome page for testing
+  # Welcome page for testing (backup)
   def welcome
     user_info = if user_signed_in?
       "\nLogged in as: #{current_user.email}"

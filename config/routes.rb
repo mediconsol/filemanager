@@ -18,6 +18,9 @@ Rails.application.routes.draw do
   # Root route - home page (works for both logged in and logged out users)
   root "home#index"
 
+  # Backup route in case home fails
+  get '/welcome', to: 'application#welcome'
+
   # Home routes
   resources :home, only: [:index]
 
