@@ -15,8 +15,8 @@ Rails.application.routes.draw do
     end
   end
   devise_for :users
-  # Root route - main landing page
-  root "index#show"
+  # Root route - use safe welcome page temporarily
+  root "application#welcome"
 
   # Backup routes
   get '/welcome', to: 'application#welcome'
