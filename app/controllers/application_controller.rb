@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::Base
-  # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  allow_browser versions: :modern
+  # Temporarily disable browser restrictions
+  # allow_browser versions: :modern
 
   # No global authentication - all pages accessible
   # Individual controllers can require authentication for specific actions
@@ -12,17 +12,7 @@ class ApplicationController < ActionController::Base
 
   # Welcome page for testing (now main page)
   def welcome
-    begin
-      user_info = if user_signed_in?
-        "\n✅ Logged in as: #{current_user.email}"
-      else
-        "\n❌ Not logged in"
-      end
-
-      render plain: "🏥 Hospital Management System\n\n✅ Rails #{Rails.version}\n✅ Ruby #{RUBY_VERSION}\n✅ Environment: #{Rails.env}\n✅ Time: #{Time.current}#{user_info}\n\n🔗 Links:\n- Login: /users/sign_in\n- Dashboard: /dashboard"
-    rescue => e
-      render plain: "🚨 Error: #{e.message}\n\nBasic system info:\nRails: #{Rails.version}\nTime: #{Time.current}"
-    end
+    render plain: "🏥 Hospital Management System\n\n✅ Rails #{Rails.version}\n✅ Ruby #{RUBY_VERSION}\n✅ Environment: #{Rails.env}\n✅ Time: #{Time.current}\n\n🔗 Links:\n- Login: /users/sign_in\n- Dashboard: /dashboard"
   end
 
   # Override Devise redirect paths
