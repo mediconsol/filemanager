@@ -20,9 +20,9 @@ gem "jbuilder"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 gem "bcrypt", "~> 3.1.7"
 
-# Authentication and Authorization
-gem "devise"
-gem "cancancan"
+# Authentication and Authorization (temporarily disabled for debugging)
+# gem "devise"
+# gem "cancancan"
 
 # File Upload and Processing
 gem "roo", "~> 2.10.0"  # Excel/CSV processing

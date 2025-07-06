@@ -1,14 +1,14 @@
 class ApplicationController < ActionController::Base
-  # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
-  allow_browser versions: :modern
+  # Temporarily disable browser restrictions for debugging
+  # allow_browser versions: :modern
 
-  # Devise 인증 필요 (welcome 액션 제외)
-  before_action :authenticate_user!, except: [:welcome]
-  before_action :configure_permitted_parameters, if: :devise_controller?
+  # Temporarily disable all authentication for debugging
+  # before_action :authenticate_user!, except: [:welcome]
+  # before_action :configure_permitted_parameters, if: :devise_controller?
 
-  # CanCanCan 권한 체크 (welcome 액션 제외)
-  include CanCan::ControllerAdditions
-  check_authorization unless: :devise_controller?, except: [:welcome]
+  # Temporarily disable authorization for debugging
+  # include CanCan::ControllerAdditions
+  # check_authorization unless: :devise_controller?, except: [:welcome]
 
   # Welcome page for testing
   def welcome
