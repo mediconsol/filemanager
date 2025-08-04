@@ -90,7 +90,6 @@ GEM
     brakeman (7.0.2)
       racc
     builder (3.3.0)
-    cancancan (3.6.1)
     capybara (3.40.0)
       addressable
       matrix
@@ -266,7 +265,13 @@ GEM
       ast (~> 2.4.1)
       racc
     pdf-core (0.10.0)
-    pg (1.5.9)
+    pg (1.6.1)
+    pg (1.6.1-aarch64-linux)
+    pg (1.6.1-aarch64-linux-musl)
+    pg (1.6.1-arm64-darwin)
+    pg (1.6.1-x86_64-darwin)
+    pg (1.6.1-x86_64-linux)
+    pg (1.6.1-x86_64-linux-musl)
     popper_js (2.11.8)
     pp (0.6.2)
       prettyprint
@@ -498,7 +503,6 @@ DEPENDENCIES
   bootsnap
   bootstrap (~> 5.3)
   brakeman
-  cancancan
   capybara
   chartkick
   dartsass-rails
@@ -513,7 +517,7 @@ DEPENDENCIES
   jquery-rails
   kamal
   kaminari
-  pg (~> 1.1)
+  pg (~> 1.6)
   prawn
   prawn-table
   propshaft
