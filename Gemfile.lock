@@ -90,7 +90,6 @@ GEM
     brakeman (7.0.2)
       racc
     builder (3.3.0)
-    cancancan (3.6.1)
     capybara (3.40.0)
       addressable
       matrix
@@ -404,11 +403,11 @@ GEM
     sass-embedded (1.89.2-x86_64-linux-musl)
       google-protobuf (~> 4.31)
     securerandom (0.4.1)
-    selenium-webdriver (4.34.0)
+    selenium-webdriver (4.35.0)
       base64 (~> 0.2)
       logger (~> 1.4)
       rexml (~> 3.2, >= 3.2.5)
-      rubyzip (>= 1.2.2, < 3.0)
+      rubyzip (>= 1.2.2, < 4.0)
       websocket (~> 1.0)
     sidekiq (8.0.5)
       connection_pool (>= 2.5.0)
@@ -498,7 +497,6 @@ DEPENDENCIES
   bootsnap
   bootstrap (~> 5.3)
   brakeman
-  cancancan
   capybara
   chartkick
   dartsass-rails
